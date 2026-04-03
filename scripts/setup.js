@@ -10,6 +10,9 @@ const { resolve } = require('path');
 const root = resolve(__dirname, '..');
 const envPath = resolve(root, '.env');
 
+// Read version from package.json — single source of truth for PORTAL_VERSION
+const { version: PORTAL_VERSION } = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'));
+
 if (!existsSync(envPath)) {
   console.error('ERROR: .env not found. Copy .env.template to .env and fill in your values.');
   process.exit(1);
@@ -31,6 +34,9 @@ if (!existsSync(templatePath)) {
   console.error('ERROR: wrangler.toml.template not found.');
   process.exit(1);
 }
+// PORTAL_VERSION is always sourced from package.json, not .env
+env['PORTAL_VERSION'] = PORTAL_VERSION;
+
 const toml = readFileSync(templatePath, 'utf8')
   .replace(/\{\{(\w+)\}\}/g, (_, key) => {
     if (!(key in env)) {

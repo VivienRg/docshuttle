@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Publishing Documents to the Repository</title>
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────────── */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --sidebar-bg: #1C2434;
+      --sidebar-hover: #313D4F;
+      --sidebar-active: #313D4F;
+      --sidebar-border: #2E3A4E;
+      --sidebar-text: #8A99AF;
+      --sidebar-active-text: #FFFFFF;
+      --sidebar-label: #6B7A90;
+      --accent: #3C50E0;
+      --accent-light: #EEF2FF;
+      --body-bg: #F1F5F9;
+      --card-bg: #FFFFFF;
+      --text-primary: #1C2434;
+      --text-secondary: #64748B;
+      --text-muted: #94A3B8;
+      --border: #E8EAED;
+      --success: #219653;
+      --success-bg: #EEFBF3;
+      --warning: #D97706;
+      --warning-bg: #FFFBEB;
+      --info: #3C50E0;
+      --info-bg: #EEF2FF;
+      --sidebar-w: 260px;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      font-size: 15px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+      background: var(--body-bg);
+      color: var(--text-primary);
+      display: flex;
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ── Sidebar ──────────────────────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--sidebar-bg);
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      z-index: 50;
+    }
+
+    .sidebar::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .sidebar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .sidebar::-webkit-scrollbar-thumb {
+      background: var(--sidebar-border);
+      border-radius: 4px;
+    }
+
+    .sidebar-brand {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--sidebar-border);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .sidebar-brand-icon {
+      width: 34px;
+      height: 34px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .sidebar-brand-text {
+      color: #fff;
+      font-size: 0.9rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .sidebar-brand-sub {
+      color: var(--sidebar-text);
+      font-size: 0.7rem;
+      margin-top: 1px;
+    }
+
+    .sidebar-meta {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--sidebar-border);
+    }
+
+    .sidebar-meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.35rem;
+    }
+
+    .sidebar-meta-label {
+      font-size: 0.65rem;
+      color: var(--sidebar-label);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .sidebar-meta-value {
+      font-size: 0.7rem;
+      color: var(--sidebar-text);
+      font-weight: 500;
+    }
+
+    .badge-version {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.62rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 20px;
+      letter-spacing: 0.03em;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: 1rem 0;
+    }
+
+    .nav-group-label {
+      padding: 0.6rem 1.5rem 0.3rem;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--sidebar-label);
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.55rem 1.5rem;
+      color: var(--sidebar-text);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 500;
+      border-radius: 0;
+      transition: background 0.15s, color 0.15s;
+      position: relative;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+    }
+
+    .nav-item:hover {
+      background: var(--sidebar-hover);
+      color: #fff;
+    }
+
+    .nav-item.active {
+      background: var(--sidebar-hover);
+      color: var(--sidebar-active-text);
+    }
+
+    .nav-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--accent);
+      border-radius: 0 3px 3px 0;
+    }
+
+    .nav-item-icon {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      opacity: 0.7;
+    }
+
+    .nav-item.active .nav-item-icon,
+    .nav-item:hover .nav-item-icon {
+      opacity: 1;
+    }
+
+    .nav-step-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      background: var(--sidebar-border);
+      color: var(--sidebar-text);
+      border-radius: 50%;
+      font-size: 0.65rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .nav-item.active .nav-step-badge {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .sidebar-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--sidebar-border);
+      font-size: 0.68rem;
+      color: var(--sidebar-label);
+      line-height: 1.5;
+    }
+
+    /* ── Main Content ─────────────────────────────────────────── */
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      padding: 0;
+      min-height: 100vh;
+    }
+
+    .topbar {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+
+    .topbar-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .topbar-breadcrumb span {
+      color: var(--text-muted);
+    }
+
+    .topbar-breadcrumb strong {
+      color: var(--text-primary);
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .doc-badge {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: var(--accent-light);
+      color: var(--accent);
+      border: 1px solid #C7D2FE;
+    }
+
+    .content {
+      padding: 2rem;
+      max-width: 900px;
+    }
+
+    /* ── Section Headers ──────────────────────────────────────── */
+    .section {
+      margin-bottom: 2rem;
+      scroll-margin-top: 72px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .section-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--accent-light);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--accent);
+    }
+
+    .section-title h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.3;
+    }
+
+    .section-title p {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    /* ── Cards ────────────────────────────────────────────────── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .card-sm {
+      padding: 1rem 1.25rem;
+    }
+
+    /* ── Step Cards ───────────────────────────────────────────── */
+    .step-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+
+    .step-card-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem 1.5rem;
+      background: var(--body-bg);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .step-number {
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .step-card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .step-card-sub {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 1px;
+    }
+
+    .step-card-body {
+      padding: 1.25rem 1.5rem;
+    }
+
+    /* ── Ordered Lists ────────────────────────────────────────── */
+    .doc-list {
+      padding-left: 0;
+      list-style: none;
+    }
+
+    .doc-list li {
+      display: flex;
+      gap: 0.75rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.875rem;
+      color: var(--text-primary);
+      line-height: 1.5;
+    }
+
+    .doc-list li:last-child {
+      border-bottom: none;
+    }
+
+    .doc-list-num {
+      width: 22px;
+      height: 22px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      font-size: 0.65rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .doc-list-bullet {
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 7px;
+    }
+
+    /* ── Callouts ─────────────────────────────────────────────── */
+    .callout {
+      display: flex;
+      gap: 0.75rem;
+      padding: 0.85rem 1rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      margin: 0.75rem 0;
+    }
+
+    .callout-info {
+      background: var(--info-bg);
+      border-left: 3px solid var(--info);
+      color: #1E3A8A;
+    }
+
+    .callout-success {
+      background: var(--success-bg);
+      border-left: 3px solid var(--success);
+      color: #14532D;
+    }
+
+    .callout-warning {
+      background: var(--warning-bg);
+      border-left: 3px solid var(--warning);
+      color: #78350F;
+    }
+
+    .callout-icon {
+      flex-shrink: 0;
+      width: 16px;
+      height: 16px;
+      margin-top: 1px;
+    }
+
+    /* ── Tables ───────────────────────────────────────────────── */
+    .doc-table-wrap {
+      overflow: hidden;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      margin-bottom: 1rem;
+    }
+
+    .doc-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+
+    .doc-table thead {
+      background: var(--body-bg);
+    }
+
+    .doc-table th {
+      padding: 0.7rem 1rem;
+      text-align: left;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .doc-table td {
+      padding: 0.8rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-primary);
+      vertical-align: top;
+      line-height: 1.5;
+    }
+
+    .doc-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .doc-table tbody tr:hover {
+      background: #F8FAFC;
+    }
+
+    .symptom {
+      font-weight: 600;
+      color: #B91C1C;
+    }
+
+    .cause {
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+    }
+
+    .resolution {
+      color: var(--text-primary);
+    }
+
+    /* ── Inline Code ──────────────────────────────────────────── */
+    code {
+      background: var(--body-bg);
+      border: 1px solid var(--border);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.78rem;
+      color: var(--accent);
+    }
+
+    /* ── Role Tags ────────────────────────────────────────────── */
+    .role-tag {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
+    .role-contributor {
+      background: #EFF6FF;
+      color: #1D4ED8;
+      border: 1px solid #BFDBFE;
+    }
+
+    .role-viewer {
+      background: #F0FDF4;
+      color: #166534;
+      border: 1px solid #BBF7D0;
+    }
+
+    .role-admin {
+      background: #FDF4FF;
+      color: #7E22CE;
+      border: 1px solid #E9D5FF;
+    }
+
+    /* ── UI Element callouts ──────────────────────────────────── */
+    .ui-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 2px 8px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      vertical-align: middle;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    /* ── Divider ──────────────────────────────────────────────── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 1.5rem 0;
+    }
+
+    /* ── Format Grid ──────────────────────────────────────────── */
+    .format-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .format-chip {
+      background: var(--body-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .format-chip-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    /* ── Responsive ───────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .sidebar {
+        transform: translateX(-100%);
+      }
+
+      .main {
+        margin-left: 0;
+      }
+
+      .content {
+        padding: 1rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ── Sidebar ─────────────────────────────────────────────── -->
+  <aside class="sidebar">
+
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
+          <polyline points="10 9 9 9 8 9" />
+        </svg>
+      </div>
+      <div>
+        <div class="sidebar-brand-text" id="brand-title"><span class="portal-title">Document Portal</span></div>
+        <div class="sidebar-brand-sub">Documentation</div>
+      </div>
+    </div>
+
+    <div class="sidebar-meta">
+      <div class="sidebar-meta-row">
+        <span class="sidebar-meta-label">Version</span>
+        <span class="badge-version">v1.0</span>
+      </div>
+      <div class="sidebar-meta-row">
+        <span class="sidebar-meta-label">Last Update</span>
+        <span class="sidebar-meta-value">April 2, 2026</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+
+      <div class="nav-group-label">Overview</div>
+      <a class="nav-item active" href="#purpose" onclick="setActive(this)">
+        <svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        Purpose &amp; Scope
+      </a>
+      <a class="nav-item" href="#prerequisites" onclick="setActive(this)">
+        <svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 11 12 14 22 4" />
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+        </svg>
+        Prerequisites
+      </a>
+
+      <div class="nav-group-label" style="margin-top:0.5rem">Procedure</div>
+      <a class="nav-item" href="#step1" onclick="setActive(this)">
+        <span class="nav-step-badge">1</span>
+        Organize in Drive
+      </a>
+      <a class="nav-item" href="#step2" onclick="setActive(this)">
+        <span class="nav-step-badge">2</span>
+        Trigger Global Refresh
+      </a>
+      <a class="nav-item" href="#step3" onclick="setActive(this)">
+        <span class="nav-step-badge">3</span>
+        Verify the Sync
+      </a>
+
+      <div class="nav-group-label" style="margin-top:0.5rem">Using the Portal</div>
+      <a class="nav-item" href="#viewing" onclick="setActive(this)">
+        <svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+        Viewing Documents
+      </a>
+      <a class="nav-item" href="#updating" onclick="setActive(this)">
+        <svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+        </svg>
+        Updating Content
+      </a>
+
+      <div class="nav-group-label" style="margin-top:0.5rem">Reference</div>
+      <a class="nav-item" href="#troubleshooting" onclick="setActive(this)">
+        <svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+        Troubleshooting
+      </a>
+      <a class="nav-item" href="#roles" onclick="setActive(this)">
+        <svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+        Roles &amp; Responsibilities
+      </a>
+
+    </nav>
+
+  </aside>
+
+  <!-- ── Main ────────────────────────────────────────────────── -->
+  <div class="main">
+
+    <div class="topbar">
+      <div class="topbar-breadcrumb">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span class="portal-title">Document Portal</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        <strong>Publishing Documents</strong>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- Purpose & Scope -->
+      <section class="section" id="purpose">
+        <div class="section-header">
+          <div class="section-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+          <div class="section-title">
+            <h2>Purpose &amp; Scope</h2>
+            <p>What this procedure covers and who it applies to</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <p style="font-size:0.875rem;color:var(--text-primary);line-height:1.7;margin-bottom:1rem">
+            This procedure describes how to publish documents to your organization's <span class="portal-title">Document
+              Portal</span>. The portal provides a high-performance, secure interface for accessing critical documents
+            without navigating Google Drive directly. Viewers never need a Google account — access is controlled through
+            Cloudflare Zero Trust instead.
+          </p>
+          <div class="callout callout-info">
+            <svg class="callout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span><strong>Global Cache:</strong> The portal uses a persistent cache to ensure instant loading for all
+              users. After adding or moving files in Google Drive, a manual <strong>Sync</strong> must be triggered to
+              update the portal for the entire team. Simply refreshing your browser is not enough.</span>
+          </div>
+        </div>
+
+        <div class="card card-sm" style="background:var(--body-bg)">
+          <div
+            style="font-size:0.72rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:0.6rem">
+            Scope</div>
+          <p style="font-size:0.82rem;color:var(--text-secondary);line-height:1.6">Applies to all team members
+            authorized to contribute to the shared Google Drive folders linked to the <span
+              class="portal-title">Document Portal</span>. Read-only users do not need to follow this procedure — they
+            simply open the portal and navigate the document tree.</p>
+        </div>
+      </section>
+
+      <!-- Prerequisites -->
+      <section class="section" id="prerequisites">
+        <div class="section-header">
+          <div class="section-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 11 12 14 22 4" />
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+            </svg>
+          </div>
+          <div class="section-title">
+            <h2>Prerequisites</h2>
+            <p>Required access and supported formats before you begin</p>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:0.75rem">
+          <div style="font-size:0.8rem;font-weight:700;color:var(--text-primary);margin-bottom:0.75rem">Required Access
+          </div>
+          <ul class="doc-list">
+            <li><span class="doc-list-bullet"></span><span>Access to the organization's shared Google Drive</span></li>
+            <li><span class="doc-list-bullet"></span><span><strong>Contributor</strong> permission (or higher) on the
+                source folders designated as portal roots</span></li>
+            <li><span class="doc-list-bullet"></span><span>Portal access granted via Cloudflare Zero Trust (contact your
+                system administrator if you cannot log in)</span></li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div style="font-size:0.8rem;font-weight:700;color:var(--text-primary);margin-bottom:0.75rem">Supported File
+            Formats</div>
+          <div class="format-grid">
+            <div class="format-chip"><span class="format-chip-dot"></span>Google Docs</div>
+            <div class="format-chip"><span class="format-chip-dot"></span>Google Sheets</div>
+            <div class="format-chip"><span class="format-chip-dot"></span>Google Slides</div>
+            <div class="format-chip"><span class="format-chip-dot"></span>PDF (.pdf)</div>
+            <div class="format-chip"><span class="format-chip-dot"></span>Markdown (.md)</div>
+            <div class="format-chip"><span class="format-chip-dot"></span>Plain Text (.txt)</div>
+            <div class="format-chip"><span class="format-chip-dot"></span>HTML (.html)</div>
+            <div class="format-chip"><span class="format-chip-dot"></span>Word (.docx)</div>
+            <div class="format-chip"><span class="format-chip-dot"></span>Excel (.xlsx)</div>
+          </div>
+          <div class="callout callout-warning" style="margin-top:0.75rem;margin-bottom:0">
+            <svg class="callout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            <span>Files in unsupported formats will open via the Google Drive preview viewer rather than rendering
+              inline. For the best experience, prefer the formats listed above.</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Procedure -->
+      <section class="section" id="step1">
+        <div class="section-header">
+          <div class="section-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+            </svg>
+          </div>
+          <div class="section-title">
+            <h2>Procedure</h2>
+            <p>Follow these three steps each time you publish a new document</p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-card-header">
+            <div class="step-number">1</div>
+            <div>
+              <div class="step-card-title">Organize in Google Drive</div>
+              <div class="step-card-sub">Place your file in the correct monitored folder</div>
+            </div>
+          </div>
+          <div class="step-card-body">
+            <ul class="doc-list">
+              <li><span class="doc-list-num">1</span><span>Upload your file directly to its designated folder in the
+                  shared Google Drive, or drag and drop it into the correct location.</span></li>
+              <li><span class="doc-list-num">2</span><span>If the document is stored elsewhere, use Google Drive's
+                  <strong>Add shortcut</strong> feature (<em>Right-click the file → Organise → Add shortcut to
+                    Drive</em>) to place a link into one of the monitored portal folders. The portal resolves shortcuts
+                  automatically — no copy is needed.</span></li>
+              <li><span class="doc-list-num">3</span><span>Ensure the filename is clear and descriptive. The filename
+                  (without extension) is the title that appears in the portal sidebar.</span></li>
+            </ul>
+            <div class="callout callout-success" style="margin-top:0.75rem;margin-bottom:0">
+              <svg class="callout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+              </svg>
+              <span><strong>Tip:</strong> Create one shared root folder and have authors in other teams add shortcuts
+                from their own folders. This keeps Drive organized while the portal surfaces everything in one
+                place.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-card" id="step2">
+          <div class="step-card-header">
+            <div class="step-number">2</div>
+            <div>
+              <div class="step-card-title">Trigger a Global Refresh</div>
+              <div class="step-card-sub">Sync the portal index for all users</div>
+            </div>
+          </div>
+          <div class="step-card-body">
+            <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:0.75rem">Because the portal uses a
+              persistent global cache, new files do not appear automatically when the page is refreshed. A manual sync
+              is required after uploading to Drive.</p>
+            <ul class="doc-list">
+              <li><span class="doc-list-num">1</span><span>Open the <span class="portal-title">Document Portal</span> in
+                  your browser.</span></li>
+              <li><span class="doc-list-num">2</span><span>In the left sidebar, locate the <span
+                    class="ui-btn">Refresh</span> button next to the <strong>REPOSITORY</strong> header.</span></li>
+              <li><span class="doc-list-num">3</span><span>A confirmation modal will appear. Read the prompt and click
+                  <span class="ui-btn" style="background:#3C50E0;color:#fff;border-color:#3C50E0">Refresh Now</span> to
+                  proceed.</span></li>
+            </ul>
+            <div class="callout callout-info" style="margin-top:0.75rem;margin-bottom:0">
+              <svg class="callout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <span>The refresh process recursively scans all configured folders and subfolders. It may take several
+                seconds depending on the depth of your folder structure. Once complete, the cache is updated globally —
+                all users see the new content immediately.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-card" id="step3">
+          <div class="step-card-header">
+            <div class="step-number">3</div>
+            <div>
+              <div class="step-card-title">Verify the Sync</div>
+              <div class="step-card-sub">Confirm your document appears correctly in the portal</div>
+            </div>
+          </div>
+          <div class="step-card-body">
+            <ul class="doc-list">
+              <li><span class="doc-list-num">1</span><span>Check the footer at the bottom of the sidebar. The
+                  <strong>Last Refresh</strong> timestamp should reflect the current date and time.</span></li>
+              <li><span class="doc-list-num">2</span><span>Locate your document in the nested folder tree. If it is
+                  inside a new folder, click the arrow <code>▶</code> next to the folder name to expand it.</span></li>
+              <li><span class="doc-list-num">3</span><span>Click the document to open it in the viewer and confirm it
+                  displays correctly.</span></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Viewing -->
+      <section class="section" id="viewing">
+        <div class="section-header">
+          <div class="section-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </div>
+          <div class="section-title">
+            <h2>Viewing &amp; Interaction</h2>
+            <p>Document modes, toolbar actions, and shareable links</p>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:0.75rem">
+          <div style="font-size:0.85rem;font-weight:700;color:var(--text-primary);margin-bottom:0.75rem">Markdown
+            Document Modes</div>
+          <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:0.75rem">For <code>.md</code> files, the
+            portal provides two viewing modes accessible from the top toolbar:</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+            <div class="card card-sm" style="border-color:#C7D2FE;background:var(--accent-light)">
+              <div style="font-size:0.8rem;font-weight:700;color:var(--accent);margin-bottom:0.25rem">Rendered <span
+                  style="font-size:0.65rem;background:var(--accent);color:#fff;padding:1px 6px;border-radius:10px;margin-left:4px">Default</span>
+              </div>
+              <div style="font-size:0.78rem;color:#3730A3;line-height:1.5">Formatted view with GitHub-style typography,
+                code blocks, and headings. Recommended for reading.</div>
+            </div>
+            <div class="card card-sm">
+              <div style="font-size:0.8rem;font-weight:700;color:var(--text-primary);margin-bottom:0.25rem">Raw</div>
+              <div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.5">Displays the unprocessed
+                Markdown source in a monospace font. For technical review or copy-paste.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:0.75rem">
+          <div style="font-size:0.85rem;font-weight:700;color:var(--text-primary);margin-bottom:0.5rem">Open in Drive
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-secondary);line-height:1.6">To edit a document or leave comments,
+            click <span class="ui-btn" style="background:#3C50E0;color:#fff;border-color:#3C50E0">Open in Drive</span>
+            in the top-right toolbar. This opens the source file in a new tab in Google Drive.</p>
+        </div>
+
+        <div class="card">
+          <div style="font-size:0.85rem;font-weight:700;color:var(--text-primary);margin-bottom:0.5rem">Shareable
+            Permalinks</div>
+          <p style="font-size:0.82rem;color:var(--text-secondary);line-height:1.6">Every document has a stable
+            <code>/view/&lt;id&gt;</code> URL shown in your browser's address bar when a document is open. Share this
+            URL with colleagues to link them directly to a specific document — they will land on that document
+            immediately after signing in.
+          </p>
+        </div>
+      </section>
+
+      <!-- Updating -->
+      <section class="section" id="updating">
+        <div class="section-header">
+          <div class="section-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+          </div>
+          <div class="section-title">
+            <h2>Updating &amp; Removing Content</h2>
+            <p>When a Global Refresh is required and when it is not</p>
+          </div>
+        </div>
+
+        <div class="doc-table-wrap">
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th>Action in Google Drive</th>
+                <th>Global Refresh Required?</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Edit content inside an existing document</strong></td>
+                <td><span style="color:var(--success);font-weight:600">No</span></td>
+                <td style="color:var(--text-secondary)">Content is fetched from Drive on each open. Changes are live
+                  immediately.</td>
+              </tr>
+              <tr>
+                <td><strong>Upload a new file</strong></td>
+                <td><span style="color:#B91C1C;font-weight:600">Yes</span></td>
+                <td style="color:var(--text-secondary)">New files are not visible until the index is refreshed.</td>
+              </tr>
+              <tr>
+                <td><strong>Rename a file or folder</strong></td>
+                <td><span style="color:#B91C1C;font-weight:600">Yes</span></td>
+                <td style="color:var(--text-secondary)">The sidebar tree is rebuilt from the index on refresh.</td>
+              </tr>
+              <tr>
+                <td><strong>Move a file to a different folder</strong></td>
+                <td><span style="color:#B91C1C;font-weight:600">Yes</span></td>
+                <td style="color:var(--text-secondary)">The file's position in the sidebar changes after refresh.</td>
+              </tr>
+              <tr>
+                <td><strong>Add a shortcut to a monitored folder</strong></td>
+                <td><span style="color:#B91C1C;font-weight:600">Yes</span></td>
+                <td style="color:var(--text-secondary)">Shortcuts are resolved and indexed on refresh.</td>
+              </tr>
+              <tr>
+                <td><strong>Delete a file or shortcut</strong></td>
+                <td><span style="color:#B91C1C;font-weight:600">Yes</span></td>
+                <td style="color:var(--text-secondary)">Move to Trash in Drive, then trigger a Global Refresh to remove
+                  it from the portal.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Troubleshooting -->
+      <section class="section" id="troubleshooting">
+        <div class="section-header">
+          <div class="section-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+          </div>
+          <div class="section-title">
+            <h2>Troubleshooting</h2>
+            <p>Common issues and how to resolve them</p>
+          </div>
+        </div>
+
+        <div class="doc-table-wrap">
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th style="width:28%">Symptom</th>
+                <th style="width:30%">Likely Cause</th>
+                <th>Resolution</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="symptom">New file not appearing in sidebar</span></td>
+                <td><span class="cause">Global cache still shows the previous state</span></td>
+                <td class="resolution">Click <span class="ui-btn">Refresh</span> in the sidebar and confirm the modal.
+                  Wait for the spinner to complete.</td>
+              </tr>
+              <tr>
+                <td><span class="symptom">"Last Refresh" shows an old timestamp</span></td>
+                <td><span class="cause">No sync has been triggered since the last file change</span></td>
+                <td class="resolution">Manually trigger a refresh. The updated timestamp confirms the index was rebuilt
+                  for all users.</td>
+              </tr>
+              <tr>
+                <td><span class="symptom">Word or Excel file fails to open</span></td>
+                <td><span class="cause">Browser blocked the Drive preview, or you are not signed into the correct Google
+                    account</span></td>
+                <td class="resolution">Ensure you are signed into the Google account that has access to the Drive. Try
+                  opening in an incognito window.</td>
+              </tr>
+              <tr>
+                <td><span class="symptom">PDF shows a "Sandbox" or blank error</span></td>
+                <td><span class="cause">Browser extension conflict or strict security settings</span></td>
+                <td class="resolution">The portal adjusts security settings for PDFs automatically. Try a hard refresh
+                  (<code>Ctrl+Shift+R</code> / <code>Cmd+Shift+R</code>) or disable extensions temporarily.</td>
+              </tr>
+              <tr>
+                <td><span class="symptom">Document opens but content looks wrong</span></td>
+                <td><span class="cause">Cached version in portal KV is stale</span></td>
+                <td class="resolution">Trigger a Global Refresh. The portal re-fetches and re-caches the file content on
+                  next open.</td>
+              </tr>
+              <tr>
+                <td><span class="symptom">Portal shows a "Root" folder only</span></td>
+                <td><span class="cause">Configuration or credential issue (admin only)</span></td>
+                <td class="resolution">Contact your system administrator. This indicates a Drive API connectivity
+                  problem, not a user-level issue.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Roles -->
+      <section class="section" id="roles">
+        <div class="section-header">
+          <div class="section-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+          </div>
+          <div class="section-title">
+            <h2>Roles &amp; Responsibilities</h2>
+            <p>Who is responsible for each part of the process</p>
+          </div>
+        </div>
+
+        <div class="doc-table-wrap">
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th>Role</th>
+                <th>Responsibilities</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="role-tag role-contributor">Contributor</span></td>
+                <td>Ensure files are correctly named and placed in the appropriate Drive folder. Trigger a Global
+                  Refresh after adding, renaming, moving, or deleting content. Verify the sync was successful.</td>
+              </tr>
+              <tr>
+                <td><span class="role-tag role-viewer">Reader / Viewer</span></td>
+                <td>Access and read documents via the portal. Report any sync discrepancies or missing documents to a
+                  Contributor or System Administrator.</td>
+              </tr>
+              <tr>
+                <td><span class="role-tag role-admin">System Administrator</span></td>
+                <td>Maintain the Cloudflare Worker deployment and KV cache configuration. Manage Google OAuth
+                  credentials and folder ID configuration. Handle infrastructure-level issues (credentials, access
+                  policies, Drive API errors).</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <hr class="divider">
+
+        <div class="card card-sm"
+          style="background:var(--body-bg);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem">
+          <span style="font-size:0.75rem;color:var(--text-muted)"><strong style="color:var(--text-secondary)">Document
+              Control</strong> — Review annually or upon system changes. Distribute to all authorized
+            contributors.</span>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+            <span class="doc-badge">v1.0</span>
+            <span class="doc-badge" style="background:#F0FDF4;color:#166534;border-color:#BBF7D0">April 2, 2026</span>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <script>
+    // Populate portal title from parent window (when embedded in the portal iframe)
+    (function () {
+      function applyTitle(title) {
+        if (!title) return;
+        document.querySelectorAll('.portal-title').forEach(el => el.textContent = title);
+        document.getElementById('brand-title').textContent = title;
+      }
+      try {
+        // Same-origin: read parent document title directly
+        const t = window.parent.document.title;
+        if (t) { applyTitle(t); return; }
+      } catch (e) { }
+      // Cross-origin fallback: request title via postMessage
+      window.addEventListener('message', function (e) {
+        if (e.data && e.data.type === 'PORTAL_TITLE') applyTitle(e.data.title);
+      });
+      if (window.parent !== window) window.parent.postMessage({ type: 'REQUEST_TITLE' }, '*');
+    })();
+
+    function setActive(el) {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    // Highlight sidebar item on scroll
+    const sections = ['purpose', 'prerequisites', 'step1', 'step2', 'step3', 'viewing', 'updating', 'troubleshooting', 'roles'];
+    const navMap = {
+      'purpose': 'a[href="#purpose"]',
+      'prerequisites': 'a[href="#prerequisites"]',
+      'step1': 'a[href="#step1"]',
+      'step2': 'a[href="#step2"]',
+      'step3': 'a[href="#step3"]',
+      'viewing': 'a[href="#viewing"]',
+      'updating': 'a[href="#updating"]',
+      'troubleshooting': 'a[href="#troubleshooting"]',
+      'roles': 'a[href="#roles"]',
+    };
+
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const sel = navMap[entry.target.id];
+          if (sel) {
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            const el = document.querySelector(sel);
+            if (el) el.classList.add('active');
+          }
+        }
+      });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+
+    sections.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+  </script>
+</body>
+
+</html>

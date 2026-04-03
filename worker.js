@@ -414,6 +414,7 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
     <button class="btn-toggle" id="menu-toggle"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
     <a href="/" class="logo-container" id="logo-link">
       <svg class="logo-svg" viewBox="0 0 1024.8 1024.8"><polygon points="427.6 128.78 968.15 128.78 750.93 506.41 633.13 506.41 810.25 219.01 488.59 219.85 427.6 128.78" style="fill:#5b616e;"/><polygon points="56.65 234.05 427.6 234.05 490.26 335.98 116.8 335.98 56.65 234.05" style="fill:#5b616e;"/><polygon points="599.5 285.01 407.5 590.97 267.19 370.23 142.7 370.23 403.37 780.45 719.39 284.98 599.5 285.01" style="fill:#f59e0b;"/><polygon points="612.24 544.84 442.64 830.58 498.61 919.97 728.37 544.84 612.24 544.84" style="fill:#5b616e;"/></svg>
+      <span class="logo-text">${portalTitle}</span>
     </a>
     <div class="search-wrap"><input id="search" placeholder="Search documents..."></div>
     <button class="btn-toggle" id="refresh-btn" title="Refresh Repository"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg></button>
@@ -422,6 +423,7 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
     <nav class="sidebar" id="sidebar">
       <div class="sidebar-content">
         <div class="sidebar-header"><span style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Repository</span></div>
+        <button class="doc-item" id="dashboard-link" style="display:flex;align-items:center;gap:8px;font-weight:600;color:var(--prim);margin:4px 8px 2px;width:calc(100% - 16px)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</button>
         <div class="tree-container" id="tree"></div>
         <div class="doc-card" id="doc-card">
           <div class="doc-card-title">Documentation</div>
@@ -492,7 +494,7 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
 <script>
 (function(){
   const CURRENT_USER = ${userJson};
-  let docs=[], folders=[], activeId=null, openIds=new Set(), mdMode='rendered';
+  let docs=[], folders=[], activeId=null, openIds=new Set(), mdMode='rendered', lastUpdated=null;
   const treeEl=document.getElementById('tree'), frame=document.getElementById('frame'), sidebar=document.getElementById('sidebar'), modal=document.getElementById('modal'), driveLink=document.getElementById('drive-link');
   const refreshOverlay=document.getElementById('refresh-overlay'), viewerOverlay=document.getElementById('viewer-overlay'), readmeCard=document.getElementById('doc-card'), dashboard=document.getElementById('dashboard');
 
@@ -508,7 +510,7 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
     const res = await fetch('/api/docs');
     const data = await res.json();
     if(data.error) { treeEl.innerHTML = '<div style="padding:1rem;color:red">'+data.error+'</div>'; return; }
-    docs=data.docs||[]; folders=data.folders||[];
+    docs=data.docs||[]; folders=data.folders||[]; lastUpdated=data.updated||null;
     
     document.getElementById('readme-link').onclick = (e) => {
       e.preventDefault();
@@ -532,7 +534,7 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
     
     const m=location.pathname.match(/^\\/view\\/([A-Za-z0-9_-]+)/);
     if(m) openDoc(m[1]);
-    else showDashboard(data);
+    else showDashboard();
 
     if (CURRENT_USER) {
       const name = displayName(CURRENT_USER.email);
@@ -546,7 +548,7 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
     }
   }
 
-  function showDashboard(data) {
+  function showDashboard() {
     document.getElementById('v-top').style.display = 'none';
     dashboard.style.display = 'block';
     frame.style.display = 'none';
@@ -562,8 +564,8 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
       document.getElementById('dash-user-login').textContent = 'Last login: ' + loginDate.toLocaleDateString() + ' ' + loginDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
-    if (data.updated) {
-      const d = new Date(data.updated);
+    if (lastUpdated) {
+      const d = new Date(lastUpdated);
       document.getElementById('dash-refresh-time').textContent = d.toLocaleDateString();
       document.getElementById('dash-refresh-sub').textContent = 'at ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
@@ -653,7 +655,8 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
   document.getElementById('btn-render').onclick = () => openDoc(activeId, 'rendered');
   document.getElementById('btn-raw').onclick = () => openDoc(activeId, 'raw');
   document.getElementById('menu-toggle').onclick = () => sidebar.classList.toggle('collapsed');
-  document.getElementById('logo-link').onclick = (e) => { e.preventDefault(); load(); };
+  document.getElementById('logo-link').onclick = (e) => { e.preventDefault(); showDashboard(); };
+  document.getElementById('dashboard-link').onclick = () => showDashboard();
   document.getElementById('refresh-btn').onclick = () => { 
     document.getElementById('modal-title').textContent = 'Refresh Repository?';
     document.getElementById('modal-desc').textContent = 'Be sure you have added documents to Google Drive before refreshing. This will update the library for all users.';
