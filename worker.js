@@ -170,11 +170,11 @@ export default {
     if (path === '/' || path.startsWith('/view/')) {
       const jwtToken = request.headers.get('Cf-Access-Jwt-Assertion') || '';
       const jwtClaims = decodeJwtPayload(jwtToken);
-      return new Response(getPortalHtml(env, jwtClaims), { 
-        headers: { 
+      return new Response(getPortalHtml(env, jwtClaims), {
+        headers: {
           'Content-Type': 'text/html;charset=UTF-8',
           'Cache-Control': 'public, max-age=60' // 1 minute
-        } 
+        }
       });
     }
 
@@ -311,7 +311,7 @@ function json(d, status = 200) { return new Response(JSON.stringify(d), { status
 function getPortalHtml(env, user = null) {
   const companyName = env.COMPANY_NAME || 'DocShuttle';
   const portalTitle = env.PORTAL_TITLE || 'DocShuttle';
-  const portalVersion = env.PORTAL_VERSION || '—';
+  const portalVersion = env.PORTAL_VERSION || '1.3.1';
   const userJson = user ? JSON.stringify({ email: user.email, sub: user.sub, iat: user.iat }) : 'null';
 
   return `<!DOCTYPE html>
@@ -323,39 +323,78 @@ function getPortalHtml(env, user = null) {
 <link rel="icon" type="image/png" href="/favicon.png">
 <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f7f6f2;--surf:#ffffff;--text:#28251d;--prim:#01696f;--hl:#cedcd8;--border:#d4d1ca;--muted:#7a7974}
+:root{
+  --bg:#f7f6f2;
+  --surf:#ffffff;
+  --text:#28251d;
+  --prim:#01696f;
+  --hl:#cedcd8;
+  --border:#d4d1ca;
+  --muted:#7a7974;
+
+  /* Sidebar Colors (Light Theme version of Documentation style) */
+  --sidebar-bg: var(--surf);
+  --sidebar-hover: #f3f0ec;
+  --sidebar-active: #f3f0ec;
+  --sidebar-border: var(--border);
+  --sidebar-text: var(--text);
+  --sidebar-active-text: var(--prim);
+  --sidebar-label: var(--muted);
+}
+
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Satoshi',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
 .topbar{display:flex;align-items:center;padding:0 1.5rem;height:56px;background:var(--surf);box-shadow: 0 1px 3px rgba(0,0,0,0.06);gap:1rem;z-index:20}
 .logo-container{display:flex;align-items:center;gap:0.75rem;text-decoration:none;color:var(--text);flex-shrink:0}
 .logo-svg{width:32px;height:32px}
+.logo-text{font-weight:700;font-size:1.1rem;letter-spacing:-0.02em}
+
 .search-wrap{margin-left:auto;width:100%;max-width:320px;position:relative}
 #search{width:100%;height:34px;padding:0 1rem;border-radius:17px;border:1px solid var(--border);background:#f3f0ec;font-family:inherit;font-size:14px}
 #search:focus{outline:none;border-color:var(--prim);background:#fff}
+
 .body{display:flex;flex:1;overflow:hidden}
-.sidebar{width:280px;background:var(--surf);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:width 0.3s cubic-bezier(0.4, 0, 0.2, 1);overflow:hidden}
+.sidebar{width:260px;background:var(--sidebar-bg);border-right:1px solid var(--sidebar-border);display:flex;flex-direction:column;transition:width 0.3s cubic-bezier(0.4, 0, 0.2, 1);overflow:hidden;z-index:50}
 .sidebar.collapsed{width:0;border-right:none}
-.sidebar-content{width:280px;height:100%;display:flex;flex-direction:column;flex-shrink:0}
-.sidebar-header{padding:1rem;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
-.tree-container{flex:1;overflow-y:auto;padding:0.5rem 0}
-.sidebar-footer{padding:1rem;border-top:1px solid var(--border);font-size:10px;color:var(--muted);line-height:1.4}
+.sidebar-content{width:260px;height:100%;display:flex;flex-direction:column;flex-shrink:0}
+
+.tree-container{flex:1;overflow-y:auto;padding:1rem 0}
+.tree-container::-webkit-scrollbar{width:4px}
+.tree-container::-webkit-scrollbar-track{background:transparent}
+.tree-container::-webkit-scrollbar-thumb{background:var(--sidebar-border);border-radius:4px}
+
+/* Hierarchy Styling */
+.nav-group-label{padding:1.5rem 1.5rem 0.5rem;font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--sidebar-label)}
+.root-divider { height: 1px; background: var(--sidebar-border); margin: 0 1.5rem 0.5rem; }
+
+.doc-item{display:flex;align-items:center;gap:0.6rem;padding:0.55rem 1.5rem;color:var(--sidebar-text);text-decoration:none;font-size:0.82rem;font-weight:500;transition:background 0.15s, color 0.15s;position:relative;cursor:pointer;border:none;background:transparent;width:100%;text-align:left}
+.doc-item:hover{background:var(--sidebar-hover);color:var(--prim)}
+.doc-item.active{background:var(--sidebar-active);color:var(--sidebar-active-text);font-weight:700}
+.doc-item.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--prim);border-radius:0 3px 3px 0}
+
+.folder-header{padding:0.55rem 1.5rem;cursor:pointer;font-weight:700;font-size:0.82rem;display:flex;align-items:center;gap:8px;user-select:none;color:var(--sidebar-text);transition: color 0.15s}
+.folder-header:hover{color:var(--prim)}
+
+/* Nested level styling */
+.folder-children{display:none;margin-left:1.5rem; border-left: 1px solid var(--sidebar-border); }
+.folder-children.open{display:block}
+.folder-children .doc-item, .folder-children .folder-header { padding-left: 1rem; }
+
+.sidebar-footer{padding:1rem 1.5rem;border-top:1px solid var(--sidebar-border);font-size:10px;color:var(--sidebar-label);line-height:1.4}
+.badge-version{display:inline-block;background:var(--prim);color:#fff;font-size:0.62rem;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:0.03em}
+
 .viewer{flex:1;display:flex;flex-direction:column;position:relative;background:var(--bg)}
 .viewer-topbar{height:48px;padding:0 1rem;display:flex;align-items:center;justify-content:space-between;background:var(--surf);border-bottom:1px solid var(--border)}
+
 .btn{padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:4px;text-decoration:none;color:inherit}
 .btn:hover{background:#f9f8f4}
-.btn-toggle{padding:8px;border:none;background:transparent;border-radius:50%}
+.btn-toggle{padding:8px;border:none;background:transparent;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .btn-toggle:hover{background:var(--hl)}
 .btn-prim{background:var(--prim);color:#fff !important;border:none}
 .btn-group{display:flex;background:#f3f0ec;padding:2px;border-radius:8px;margin-right:12px}
 .btn-group .btn-item{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--muted)}
 .btn-group .btn-item.active{background:#fff;color:var(--prim);box-shadow:0 2px 4px rgba(0,0,0,0.05)}
-.doc-item{padding:8px 12px;cursor:pointer;font-size:14px;border-radius:6px;margin:2px 8px;display:block;text-align:left;border:none;background:transparent;width:calc(100% - 16px);color:var(--text);border-left: 2px solid transparent; transition: all 0.2s; }
-.doc-item:hover{background:#f3f0ec}
-.doc-item.active{background:transparent;border-left-color:var(--prim);color:var(--prim);font-weight:700;padding-left:14px}
-.folder-header{padding:8px 12px;cursor:pointer;font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px;user-select:none}
-.folder-children{display:none;padding-left:1rem;margin-left:1rem;border-left:1px solid var(--border)}
-.folder-children.open{display:block}
-iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
 
 .refresh-overlay{position:fixed;inset:0;background:rgba(255,255,255,0.9);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:200;text-align:center}
 .viewer-overlay{position:absolute;inset:0;background:rgba(255,255,255,0.9);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:10;text-align:center}
@@ -366,15 +405,12 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
 .modal{background:#fff;padding:1.5rem;border-radius:12px;width:100%;max-width:320px;box-shadow:0 10px 25px rgba(0,0,0,0.1);text-align:center}
 .modal-btns{display:flex;gap:0.75rem;justify-content:center;margin-top:1.5rem}
 
-.doc-card{margin:8px;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;display:block}
-.doc-card-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px}
-
-.user-menu{padding:0.75rem 1rem;border-top:1px solid var(--border);display:flex;align-items:center;gap:0.75rem}
+.user-menu{padding:0.75rem 1rem;border-top:1px solid var(--sidebar-border);display:flex;align-items:center;gap:0.75rem}
 .user-avatar{width:32px;height:32px;border-radius:50%;background:var(--prim);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .user-info{display:flex;flex-direction:column;overflow:hidden}
 .user-name{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .user-email{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.user-login{font-size:10px;color:var(--muted);opacity:0.7;margin-top:2px}
+.user-login{font-size:10px;color:var(--sidebar-label);opacity:0.7;margin-top:2px}
 
 .dashboard{flex:1;overflow-y:auto;padding:2rem;background:var(--bg)}
 .dash-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:1rem;margin-bottom:2rem}
@@ -390,6 +426,8 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
 .dash-table tr:last-child td{border-bottom:none}
 .dash-table .doc-link{color:var(--prim);font-weight:600;cursor:pointer;background:none;border:none;font-family:inherit;font-size:inherit;padding:0;text-align:left}
 .dash-table .doc-link:hover{text-decoration:underline}
+
+iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
 </style>
 </head>
 <body>
@@ -417,18 +455,24 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
       <span class="logo-text">${portalTitle}</span>
     </a>
     <div class="search-wrap"><input id="search" placeholder="Search documents..."></div>
-    <button class="btn-toggle" id="refresh-btn" title="Refresh Repository"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg></button>
+    <button class="btn btn-prim" id="refresh-btn" style="margin-left: 1rem; gap: 8px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+      Refresh
+    </button>
   </header>
+
   <div class="body">
-    <nav class="sidebar" id="sidebar">
+    <aside class="sidebar" id="sidebar">
       <div class="sidebar-content">
-        <div class="sidebar-header"><span style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Repository</span></div>
-        <button class="doc-item" id="dashboard-link" style="display:flex;align-items:center;gap:8px;font-weight:600;color:var(--prim);margin:4px 8px 2px;width:calc(100% - 16px)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</button>
-        <div class="tree-container" id="tree"></div>
-        <div class="doc-card" id="doc-card">
-          <div class="doc-card-title">Documentation</div>
-          <button class="btn" style="width:100%; justify-content:center" id="readme-link">Open Documentation</button>
-        </div>
+        <nav class="tree-container" id="tree">
+          <div class="nav-group-label">OVERVIEW</div>
+          <button class="doc-item" id="dashboard-link">
+            <svg class="nav-item-icon" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Dashboard
+          </button>
+          <div id="tree-content"></div>
+        </nav>
+
         <div class="user-menu" id="user-menu" style="display:none">
           <div class="user-avatar" id="user-avatar"></div>
           <div class="user-info">
@@ -437,12 +481,24 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
             <span class="user-login" id="user-login"></span>
           </div>
         </div>
+
         <div class="sidebar-footer">
+          <div style="margin-bottom: 8px; opacity: 0.8;">
+            <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 2px;">
+              <span>VERSION</span>
+              <span class="badge-version" style="padding: 1px 5px;">v${portalVersion}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 9px;">
+              <span>LAST UPDATE</span>
+              <span id="side-last-update" style="color: var(--sidebar-text); font-weight: 600;">—</span>
+            </div>
+          </div>
           <p style="margin-bottom:4px"><strong>Confidential Internal Use Only</strong></p>
-          <p style="opacity:0.5">v${portalVersion} &nbsp;·&nbsp; &copy; <span id="copy-year"></span> ${companyName}</p>
+          <p>&copy; <span id="copy-year"></span> ${companyName}</p>
         </div>
       </div>
-    </nav>
+    </aside>
+
     <main class="viewer">
       <div id="dashboard" class="dashboard">
         <div class="dash-grid">
@@ -495,8 +551,8 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
 (function(){
   const CURRENT_USER = ${userJson};
   let docs=[], folders=[], activeId=null, openIds=new Set(), mdMode='rendered', lastUpdated=null;
-  const treeEl=document.getElementById('tree'), frame=document.getElementById('frame'), sidebar=document.getElementById('sidebar'), modal=document.getElementById('modal'), driveLink=document.getElementById('drive-link');
-  const refreshOverlay=document.getElementById('refresh-overlay'), viewerOverlay=document.getElementById('viewer-overlay'), readmeCard=document.getElementById('doc-card'), dashboard=document.getElementById('dashboard');
+  const treeEl=document.getElementById('tree-content'), frame=document.getElementById('frame'), sidebar=document.getElementById('sidebar'), modal=document.getElementById('modal'), driveLink=document.getElementById('drive-link');
+  const refreshOverlay=document.getElementById('refresh-overlay'), viewerOverlay=document.getElementById('viewer-overlay'), dashboard=document.getElementById('dashboard');
 
   document.getElementById('copy-year').textContent = new Date().getFullYear();
 
@@ -512,23 +568,10 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
     if(data.error) { treeEl.innerHTML = '<div style="padding:1rem;color:red">'+data.error+'</div>'; return; }
     docs=data.docs||[]; folders=data.folders||[]; lastUpdated=data.updated||null;
     
-    document.getElementById('readme-link').onclick = (e) => {
-      e.preventDefault();
-      activeId = null;
-      document.getElementById('v-top').style.display = 'none';
-      if (document.getElementById('dashboard')) document.getElementById('dashboard').style.display = 'none';
-      frame.style.display = '';
-      frame.removeAttribute('sandbox');
-      frame.src = '/DOCUMENTATION.html';
-      history.pushState({},'','/');
-      render();
-    };
-    // respond to title requests from the documentation iframe
-    window.addEventListener('message', e => {
-      if (e.data && e.data.type === 'REQUEST_TITLE') {
-        e.source.postMessage({ type: 'PORTAL_TITLE', title: document.title }, '*');
-      }
-    });
+    if (data.updated) {
+      const d = new Date(data.updated);
+      document.getElementById('side-last-update').textContent = d.toLocaleDateString();
+    }
     
     render();
     
@@ -553,6 +596,7 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
     dashboard.style.display = 'block';
     frame.style.display = 'none';
     activeId = null;
+    document.getElementById('dashboard-link').classList.add('active');
     render();
     history.pushState(null, '', '/');
 
@@ -598,7 +642,18 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
       folders.forEach(f=>{if(f.parentFolderId&&map.has(f.parentFolderId)) map.get(f.parentFolderId).children.push(map.get(f.id))});
       docs.forEach(d=>{if(d.parentFolderId&&map.has(d.parentFolderId)) map.get(d.parentFolderId).files.push(d)});
       const roots = folders.filter(f=>f.isRoot||!f.parentFolderId).map(f=>map.get(f.id));
-      treeEl.innerHTML = roots.map(renderNode).join('');
+      
+      treeEl.innerHTML = roots.map(r => {
+        return \`
+          <div class="root-section">
+            <div class="nav-group-label">\${r.name}</div>
+            <div class="root-children">
+              \${r.children.map(c => renderNode(c)).join('')}
+              \${r.files.map(f => \`<button class="doc-item \${f.id===activeId?'active':''}" onclick="openDoc('\${f.id}')">\${f.name}</button>\`).join('')}
+            </div>
+          </div>
+        \`;
+      }).join('');
     }
   }
 
@@ -608,7 +663,7 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
     const chevron = open ? \`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>\` : \`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>\`;
     return \`<div class="folder-group">
       <div class="folder-header" onclick="toggleFolder('\${n.id}')">
-        <span style="display:flex;align-items:center;width:14px;color:var(--muted)">\${chevron}</span> \${n.name}
+        <span style="display:flex;align-items:center;width:14px;opacity:0.6">\${chevron}</span> \${n.name}
       </div>
       <div class="folder-children \${open?'open':''}">
         \${n.children.map(renderNode).join('')}
@@ -626,6 +681,7 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
     
     dashboard.style.display = 'none';
     frame.style.display = 'block';
+    document.getElementById('dashboard-link').classList.remove('active');
     document.getElementById('v-top').style.display='flex';
     document.getElementById('v-title').textContent=doc.name;
     viewerOverlay.style.display = 'flex';
