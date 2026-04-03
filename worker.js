@@ -366,7 +366,7 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
 .modal{background:#fff;padding:1.5rem;border-radius:12px;width:100%;max-width:320px;box-shadow:0 10px 25px rgba(0,0,0,0.1);text-align:center}
 .modal-btns{display:flex;gap:0.75rem;justify-content:center;margin-top:1.5rem}
 
-.doc-card{margin:8px;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;display:none}
+.doc-card{margin:8px;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;display:block}
 .doc-card-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px}
 
 .user-menu{padding:0.75rem 1rem;border-top:1px solid var(--border);display:flex;align-items:center;gap:0.75rem}
@@ -510,11 +510,23 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
     if(data.error) { treeEl.innerHTML = '<div style="padding:1rem;color:red">'+data.error+'</div>'; return; }
     docs=data.docs||[]; folders=data.folders||[];
     
-    const readme = docs.find(d => d.name.toLowerCase() === 'readme');
-    if (readme) {
-      readmeCard.style.display = 'block';
-      document.getElementById('readme-link').onclick = (e) => { e.preventDefault(); openDoc(readme.id, 'rendered'); };
-    }
+    document.getElementById('readme-link').onclick = (e) => {
+      e.preventDefault();
+      activeId = null;
+      document.getElementById('v-top').style.display = 'none';
+      if (document.getElementById('dashboard')) document.getElementById('dashboard').style.display = 'none';
+      frame.style.display = '';
+      frame.removeAttribute('sandbox');
+      frame.src = '/DOCUMENTATION.html';
+      history.pushState({},'','/');
+      render();
+    };
+    // respond to title requests from the documentation iframe
+    window.addEventListener('message', e => {
+      if (e.data && e.data.type === 'REQUEST_TITLE') {
+        e.source.postMessage({ type: 'PORTAL_TITLE', title: document.title }, '*');
+      }
+    });
     
     render();
     
