@@ -1,0 +1,206 @@
+DOCSHUTTLE OPEN SOURCE NON-COMMERCIAL LICENSE (DOSNCL)
+Version 1.1
+
+Copyright (c) 2026 Vivien Roggero
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. DEFINITIONS
+
+"Licensor" refers to Vivien Roggero and the copyright holders of the Software.
+
+"Software" refers to the DocShuttle source code, compiled object code, and any
+affiliated documentation made available under this License.
+
+"You" (or "Your") refers to an individual or legal entity exercising
+permissions granted by this License.
+
+"Derivative Work" means any work, whether in source or object form, that is
+based on or derived from the Software — including modifications, translations,
+adaptations, and works that incorporate all or a substantial part of the
+Software — and for which the editorial revisions, annotations, elaborations,
+or other modifications represent, as a whole, an original work of authorship.
+Works that merely interact with the Software through its published interfaces
+(e.g. API calls) without incorporating its source code do not constitute
+Derivative Works.
+
+"Non-Commercial Use" means use of the Software solely for personal,
+educational, research, charitable, or internal organisational purposes where
+no direct or indirect monetary compensation, commercial advantage, or revenue
+is sought or received as a result of that use. Deploying the Software for the
+benefit of a for-profit organisation's internal operations qualifies as
+Non-Commercial Use provided the Software itself is not the product or service
+being offered to third parties.
+
+"Commercial Use" means any use, deployment, or distribution of the Software or
+Derivative Works intended for or directed toward commercial advantage, monetary
+compensation, or revenue generation, including but not limited to: selling,
+reselling, sublicensing, or leasing the Software; providing the Software or
+Derivative Works as a managed service (SaaS, PaaS, or similar); or bundling
+the Software as a component of a commercial product or offering.
+
+"Network Use" means making the functionality of the Software available to
+third parties over a network or the Internet, whether or not any source code
+is distributed.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+2. GRANT OF COPYRIGHT LICENSE
+
+Subject to the terms and conditions of this License, Licensor hereby grants
+You a worldwide, royalty-free, non-exclusive, irrevocable (except as stated in
+Section 7) copyright license to reproduce, prepare Derivative Works of,
+publicly display, publicly perform, and distribute the Software and such
+Derivative Works in source or object form, exclusively for Non-Commercial Use.
+
+No patent rights are granted under this License.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+3. CONDITIONS AND OBLIGATIONS
+
+If You distribute, publish, or otherwise make available the Software or
+Derivative Works — including via Network Use — You must satisfy all of the
+following conditions:
+
+a. Disclosure of Source Code.
+   You must make the complete corresponding source code of the Software and any
+   Derivative Works publicly and openly available to all recipients, including
+   when the Software is made available via Network Use. Source code must be
+   provided through a durable, freely accessible channel (e.g. a public
+   version control repository) and must include all scripts and configuration
+   required to build and deploy the Software.
+
+b. Same License (Copyleft).
+   Any Derivative Works that You distribute, publish, or otherwise make
+   available — including via Network Use — must be licensed in their entirety,
+   at no charge to all third parties, under the exact terms and conditions of
+   this License. You may not impose any additional restrictions on the rights
+   granted by this License.
+
+c. License and Copyright Notice.
+   You must provide all recipients of the Software or Derivative Works with a
+   complete, unmodified copy of this License and retain all copyright, patent,
+   trademark, and attribution notices contained within the Software. When
+   distributing in binary or compiled form, such notices must be included in
+   the documentation or other materials accompanying the distribution.
+
+d. Attribution.
+   All copies or substantial portions of the Software, and any Derivative
+   Works, must include the following notice in a prominent location:
+
+       Based on DocShuttle by Vivien Roggero — https://github.com/vivien/docshuttle
+       Licensed under the DocShuttle Open Source Non-Commercial License (DOSNCL) v1.1
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+4. RESTRICTIONS ON USE
+
+a. No Commercial Use.
+   You may not exercise any of the rights granted in Section 2 for any
+   Commercial Use. The Software, its components, and any Derivative Works may
+   not be sold, resold, sublicensed, monetised, or incorporated into a
+   commercial product, service, or offering.
+
+b. No Sub-Licensing.
+   You may not grant sublicenses to the Software except as expressly required
+   to distribute Derivative Works under the identical terms of this License.
+
+c. No Misrepresentation.
+   You may not misrepresent the origin of the Software. You must not claim
+   that You wrote the original Software. Modified versions must be clearly
+   marked as such and must not be misrepresented as the original Software.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+5. TRADEMARKS
+
+This License does not grant permission to use the trade names, trademarks,
+service marks, or product names of the Licensor — including "DocShuttle" —
+except as required for reasonable and customary use in describing the origin
+of the Software and reproducing the required copyright and attribution notices.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+6. COMMERCIAL LICENSING
+
+If You wish to use the Software for Commercial Use, You must obtain a separate
+commercial license from the Licensor. Please contact the Licensor to discuss
+commercial licensing terms.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+7. TERMINATION
+
+a. This License and the rights granted hereunder will terminate automatically
+   upon any breach by You of the terms of this License.
+
+b. Upon termination, You must immediately cease all use and distribution of
+   the Software and Derivative Works and destroy all copies in Your possession
+   or control.
+
+c. Sections 1, 4, 5, 6, 8, 9, and 10 survive termination of this License.
+
+d. If You cure the breach within 30 days of becoming aware of it, and the
+   Licensor has not yet notified You of termination, Your rights are
+   reinstated automatically. Reinstatement is available once only for a given
+   breach.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+8. DISCLAIMER OF WARRANTY
+
+Unless required by applicable law or agreed to in writing, Licensor provides
+the Software on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied, including, without limitation, any warranties
+or conditions of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+PARTICULAR PURPOSE. You are solely responsible for determining the
+appropriateness of using or redistributing the Software and assume all risks
+associated with Your exercise of permissions under this License.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+9. LIMITATION OF LIABILITY
+
+In no event and under no legal theory, whether in tort (including negligence),
+contract, strict liability, or otherwise, unless required by applicable law or
+agreed to in writing, shall the Licensor be liable to You for damages,
+including any direct, indirect, special, incidental, exemplary, or
+consequential damages of any character arising from this License or from the
+use or inability to use the Software (including but not limited to loss of
+data, loss of goodwill, business interruption, or computer failure), even if
+the Licensor has been advised of the possibility of such damages.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+10. GENERAL PROVISIONS
+
+a. Severability. If any provision of this License is held unenforceable or
+   invalid by a court of competent jurisdiction, that provision shall be
+   modified to the minimum extent necessary to make it enforceable, and the
+   remainder of this License shall continue in full force and effect.
+
+b. Waiver. No failure or delay by the Licensor in exercising any right under
+   this License shall constitute a waiver of that right. Any waiver must be
+   in writing and signed by the Licensor.
+
+c. Entire Agreement. This License constitutes the entire agreement between the
+   parties with respect to the Software and supersedes all prior or
+   contemporaneous understandings, agreements, or representations.
+
+d. Governing Law. This License shall be governed by and construed in
+   accordance with the laws of the jurisdiction in which the Licensor is
+   domiciled, without regard to its conflict-of-law provisions.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+END OF LICENSE
+
+To apply this License to a new work, include the following notice:
+
+    Copyright (c) 2026 Vivien Roggero
+
+    This work is licensed under the DocShuttle Open Source Non-Commercial
+    License (DOSNCL) Version 1.1. You may not use this work except in
+    compliance with the License. A copy of the License is available in the
+    LICENSE file accompanying this work.

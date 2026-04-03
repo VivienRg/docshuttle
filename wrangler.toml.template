@@ -1,0 +1,19 @@
+name        = "{{WORKER_NAME}}"
+main        = "worker.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# Generated file — do not edit wrangler.toml directly.
+# Edit wrangler.toml.template, then run `npm run setup` to regenerate.
+
+[vars]
+COMPANY_NAME = "{{COMPANY_NAME}}"
+PORTAL_TITLE = "{{PORTAL_TITLE}}"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+[[kv_namespaces]]
+binding = "CACHE"
+id      = "{{KV_NAMESPACE_ID}}"
