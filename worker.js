@@ -5,8 +5,22 @@
 const DRIVE_API = 'https://www.googleapis.com/drive/v3';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const CACHE_KEY_METADATA = "doc_portal_tree_v6";
+const REFRESH_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+const MAX_CACHE_BYTES = 256 * 1024; // 256 KB
 
 let subrequestCount = 0;
+
+function decodeJwtPayload(token) {
+  try {
+    const payload = token.split('.')[1];
+    if (!payload) return null;
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const json = atob(base64);
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
 
 // ── Google Auth ────────────────────────────────────────────
 
@@ -105,17 +119,22 @@ async function buildDocList(env) {
     }
   }
 
-  for (const folderId of folderIds) {
-    const url = `${DRIVE_API}/files/${folderId}?fields=id,name&supportsAllDrives=true`;
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    const meta = await res.json();
-    if (meta.error) {
-      throw new Error(`Drive API Error [meta]: ${meta.error.message} (Folder: ${folderId})`);
+  await Promise.all(folderIds.map(async (folderId) => {
+    try {
+      const url = `${DRIVE_API}/files/${folderId}?fields=id,name&supportsAllDrives=true`;
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      const meta = await res.json();
+      if (meta.error) {
+        throw new Error(`Drive API Error [meta]: ${meta.error.message} (Folder: ${folderId})`);
+      }
+      const folderName = meta.name || 'Root';
+      folders.push({ id: folderId, name: folderName, parentFolderId: null, isRoot: true });
+      await processFolder(folderId, folderName);
+    } catch (e) {
+      console.error(`Error processing root folder ${folderId}:`, e.message);
+      throw e;
     }
-    const folderName = meta.name || 'Root';
-    folders.push({ id: folderId, name: folderName, parentFolderId: null, isRoot: true });
-    await processFolder(folderId, folderName);
-  }
+  }));
   docs.sort((a, b) => a.name.localeCompare(b.name));
   return { docs, folders, updated: Date.now() };
 }
@@ -148,7 +167,16 @@ export default {
     }
 
     if (request.method === 'OPTIONS') return new Response(null, { headers: CORS });
-    if (path === '/' || path.startsWith('/view/')) return new Response(getPortalHtml(env), { headers: { 'Content-Type': 'text/html;charset=UTF-8' } });
+    if (path === '/' || path.startsWith('/view/')) {
+      const jwtToken = request.headers.get('Cf-Access-Jwt-Assertion') || '';
+      const jwtClaims = decodeJwtPayload(jwtToken);
+      return new Response(getPortalHtml(env, jwtClaims), { 
+        headers: { 
+          'Content-Type': 'text/html;charset=UTF-8',
+          'Cache-Control': 'public, max-age=60' // 1 minute
+        } 
+      });
+    }
 
     // API: List Docs (Pulling from metadata cache)
     if (path === '/api/docs') {
@@ -158,13 +186,28 @@ export default {
           data = await buildDocList(env);
           if (env.CACHE) await env.CACHE.put(CACHE_KEY_METADATA, JSON.stringify(data));
         }
-        return json(data);
+        return new Response(JSON.stringify(data), {
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'public, max-age=300', // 5 minutes
+            ...CORS
+          }
+        });
       } catch (e) { return json({ error: e.message }, 500); }
     }
 
     // API: Global Refresh
     if (path === '/api/refresh' && request.method === 'POST') {
       try {
+        if (env.CACHE) {
+          const lastRefresh = await env.CACHE.get('last_refresh_ts');
+          if (lastRefresh && Date.now() - Number(lastRefresh) < REFRESH_COOLDOWN_MS) {
+            const remaining = Math.ceil((REFRESH_COOLDOWN_MS - (Date.now() - Number(lastRefresh))) / 1000);
+            return json({ error: `Refresh cooldown active. Try again in ${remaining}s.` }, 429);
+          }
+          await env.CACHE.put('last_refresh_ts', String(Date.now()));
+        }
+
         const data = await buildDocList(env);
         if (env.CACHE) await env.CACHE.put(CACHE_KEY_METADATA, JSON.stringify(data));
         return json({ success: true, updated: data.updated });
@@ -242,8 +285,8 @@ export default {
           finalBuffer = new TextEncoder().encode(html);
         }
 
-        // Store content in KV with 7-day TTL
-        if (env.CACHE) {
+        // Store content in KV with 7-day TTL if below size threshold
+        if (env.CACHE && finalBuffer.byteLength <= MAX_CACHE_BYTES) {
           await env.CACHE.put(CONTENT_CACHE_KEY, finalBuffer, { expirationTtl: 604800 });
         }
 
@@ -265,9 +308,11 @@ export default {
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' };
 function json(d, status = 200) { return new Response(JSON.stringify(d), { status, headers: { 'Content-Type': 'application/json', ...CORS } }); }
 
-function getPortalHtml(env) {
+function getPortalHtml(env, user = null) {
   const companyName = env.COMPANY_NAME || 'DocShuttle';
   const portalTitle = env.PORTAL_TITLE || 'DocShuttle';
+  const portalVersion = env.PORTAL_VERSION || '—';
+  const userJson = user ? JSON.stringify({ email: user.email, sub: user.sub, iat: user.iat }) : 'null';
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -281,10 +326,9 @@ function getPortalHtml(env) {
 :root{--bg:#f7f6f2;--surf:#ffffff;--text:#28251d;--prim:#01696f;--hl:#cedcd8;--border:#d4d1ca;--muted:#7a7974}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Satoshi',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
-.topbar{display:flex;align-items:center;padding:0 1.5rem;height:56px;background:var(--surf);border-bottom:1px solid var(--border);gap:1rem;z-index:20}
+.topbar{display:flex;align-items:center;padding:0 1.5rem;height:56px;background:var(--surf);box-shadow: 0 1px 3px rgba(0,0,0,0.06);gap:1rem;z-index:20}
 .logo-container{display:flex;align-items:center;gap:0.75rem;text-decoration:none;color:var(--text);flex-shrink:0}
 .logo-svg{width:32px;height:32px}
-.logo-text{font-weight:700;font-size:1.1rem;letter-spacing:-0.02em}
 .search-wrap{margin-left:auto;width:100%;max-width:320px;position:relative}
 #search{width:100%;height:34px;padding:0 1rem;border-radius:17px;border:1px solid var(--border);background:#f3f0ec;font-family:inherit;font-size:14px}
 #search:focus{outline:none;border-color:var(--prim);background:#fff}
@@ -295,7 +339,7 @@ body{font-family:'Satoshi',sans-serif;background:var(--bg);color:var(--text);hei
 .sidebar-header{padding:1rem;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
 .tree-container{flex:1;overflow-y:auto;padding:0.5rem 0}
 .sidebar-footer{padding:1rem;border-top:1px solid var(--border);font-size:10px;color:var(--muted);line-height:1.4}
-.viewer{flex:1;display:flex;flex-direction:column;position:relative}
+.viewer{flex:1;display:flex;flex-direction:column;position:relative;background:var(--bg)}
 .viewer-topbar{height:48px;padding:0 1rem;display:flex;align-items:center;justify-content:space-between;background:var(--surf);border-bottom:1px solid var(--border)}
 .btn{padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:4px;text-decoration:none;color:inherit}
 .btn:hover{background:#f9f8f4}
@@ -305,9 +349,9 @@ body{font-family:'Satoshi',sans-serif;background:var(--bg);color:var(--text);hei
 .btn-group{display:flex;background:#f3f0ec;padding:2px;border-radius:8px;margin-right:12px}
 .btn-group .btn-item{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--muted)}
 .btn-group .btn-item.active{background:#fff;color:var(--prim);box-shadow:0 2px 4px rgba(0,0,0,0.05)}
-.doc-item{padding:8px 12px;cursor:pointer;font-size:14px;border-radius:6px;margin:2px 8px;display:block;text-align:left;border:none;background:transparent;width:calc(100% - 16px);color:var(--text)}
+.doc-item{padding:8px 12px;cursor:pointer;font-size:14px;border-radius:6px;margin:2px 8px;display:block;text-align:left;border:none;background:transparent;width:calc(100% - 16px);color:var(--text);border-left: 2px solid transparent; transition: all 0.2s; }
 .doc-item:hover{background:#f3f0ec}
-.doc-item.active{background:var(--hl);color:var(--prim);font-weight:700}
+.doc-item.active{background:transparent;border-left-color:var(--prim);color:var(--prim);font-weight:700;padding-left:14px}
 .folder-header{padding:8px 12px;cursor:pointer;font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px;user-select:none}
 .folder-children{display:none;padding-left:1rem;margin-left:1rem;border-left:1px solid var(--border)}
 .folder-children.open{display:block}
@@ -324,6 +368,28 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
 
 .doc-card{margin:8px;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;display:none}
 .doc-card-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px}
+
+.user-menu{padding:0.75rem 1rem;border-top:1px solid var(--border);display:flex;align-items:center;gap:0.75rem}
+.user-avatar{width:32px;height:32px;border-radius:50%;background:var(--prim);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.user-info{display:flex;flex-direction:column;overflow:hidden}
+.user-name{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-email{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-login{font-size:10px;color:var(--muted);opacity:0.7;margin-top:2px}
+
+.dashboard{flex:1;overflow-y:auto;padding:2rem;background:var(--bg)}
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:1rem;margin-bottom:2rem}
+.dash-card{background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem}
+.dash-card-label{font-size:10px;font-weight:700;letter-spacing:0.08em;color:var(--muted);text-transform:uppercase;margin-bottom:0.5rem}
+.dash-card-value{font-size:1.5rem;font-weight:700;color:var(--text);line-height:1.2}
+.dash-card-sub{font-size:12px;color:var(--muted);margin-top:4px}
+.dash-section-label{font-size:10px;font-weight:700;letter-spacing:0.08em;color:var(--muted);text-transform:uppercase;margin-bottom:0.75rem}
+.dash-table-wrap{background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem}
+.dash-table{width:100%;border-collapse:collapse;font-size:13px}
+.dash-table th{text-align:left;font-size:10px;font-weight:700;letter-spacing:0.06em;color:var(--muted);text-transform:uppercase;padding:0 0 0.75rem;border-bottom:1px solid var(--border)}
+.dash-table td{padding:0.6rem 0;border-bottom:1px solid var(--border);color:var(--text)}
+.dash-table tr:last-child td{border-bottom:none}
+.dash-table .doc-link{color:var(--prim);font-weight:600;cursor:pointer;background:none;border:none;font-family:inherit;font-size:inherit;padding:0;text-align:left}
+.dash-table .doc-link:hover{text-decoration:underline}
 </style>
 </head>
 <body>
@@ -335,8 +401,8 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
 
   <div class="modal-overlay" id="modal">
     <div class="modal">
-      <h3>Refresh Repository?</h3>
-      <p style="font-size:13px;color:var(--muted);margin-top:8px">Be sure you have added documents to Google Drive before refreshing. This will update the library for all users.</p>
+      <h3 id="modal-title">Refresh Repository?</h3>
+      <p id="modal-desc" style="font-size:13px;color:var(--muted);margin-top:8px">Be sure you have added documents to Google Drive before refreshing. This will update the library for all users.</p>
       <div class="modal-btns">
         <button class="btn" id="modal-cancel">Cancel</button>
         <button class="btn btn-prim" id="modal-confirm">Refresh Now</button>
@@ -346,29 +412,66 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
 
   <header class="topbar">
     <button class="btn-toggle" id="menu-toggle"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
-    <div class="logo-container">
+    <a href="/" class="logo-container" id="logo-link">
       <svg class="logo-svg" viewBox="0 0 1024.8 1024.8"><polygon points="427.6 128.78 968.15 128.78 750.93 506.41 633.13 506.41 810.25 219.01 488.59 219.85 427.6 128.78" style="fill:#5b616e;"/><polygon points="56.65 234.05 427.6 234.05 490.26 335.98 116.8 335.98 56.65 234.05" style="fill:#5b616e;"/><polygon points="599.5 285.01 407.5 590.97 267.19 370.23 142.7 370.23 403.37 780.45 719.39 284.98 599.5 285.01" style="fill:#f59e0b;"/><polygon points="612.24 544.84 442.64 830.58 498.61 919.97 728.37 544.84 612.24 544.84" style="fill:#5b616e;"/></svg>
-      <span class="logo-text">${portalTitle}</span>
-    </div>
+    </a>
     <div class="search-wrap"><input id="search" placeholder="Search documents..."></div>
+    <button class="btn-toggle" id="refresh-btn" title="Refresh Repository"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg></button>
   </header>
   <div class="body">
     <nav class="sidebar" id="sidebar">
       <div class="sidebar-content">
-        <div class="sidebar-header"><span style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:0.05em">REPOSITORY</span><button class="btn" id="refresh-btn">Refresh</button></div>
+        <div class="sidebar-header"><span style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Repository</span></div>
         <div class="tree-container" id="tree"></div>
         <div class="doc-card" id="doc-card">
           <div class="doc-card-title">Documentation</div>
           <button class="btn" style="width:100%; justify-content:center" id="readme-link">Open Documentation</button>
         </div>
+        <div class="user-menu" id="user-menu" style="display:none">
+          <div class="user-avatar" id="user-avatar"></div>
+          <div class="user-info">
+            <span class="user-name" id="user-name"></span>
+            <span class="user-email" id="user-email"></span>
+            <span class="user-login" id="user-login"></span>
+          </div>
+        </div>
         <div class="sidebar-footer">
-          <p id="last-refresh" style="margin-bottom:8px; font-weight:600; font-size:9px; opacity:0.7"></p>
-          <p><strong>Confidential Internal Use Only</strong></p>
-          <p>&copy; <span id="copy-year"></span> ${companyName}. All rights reserved.</p>
+          <p style="margin-bottom:4px"><strong>Confidential Internal Use Only</strong></p>
+          <p style="opacity:0.5">v${portalVersion} &nbsp;·&nbsp; &copy; <span id="copy-year"></span> ${companyName}</p>
         </div>
       </div>
     </nav>
     <main class="viewer">
+      <div id="dashboard" class="dashboard">
+        <div class="dash-grid">
+          <div class="dash-card">
+            <div class="dash-card-label">Signed in as</div>
+            <div class="dash-card-value" id="dash-user-name">—</div>
+            <div class="dash-card-sub" id="dash-user-email"></div>
+            <div class="dash-card-sub" id="dash-user-login"></div>
+          </div>
+          <div class="dash-card">
+            <div class="dash-card-label">Repository last refreshed</div>
+            <div class="dash-card-value" id="dash-refresh-time">—</div>
+            <div class="dash-card-sub" id="dash-refresh-sub"></div>
+          </div>
+          <div class="dash-card">
+            <div class="dash-card-label">Total documents</div>
+            <div class="dash-card-value" id="dash-total-files">—</div>
+            <div class="dash-card-sub" id="dash-total-sub"></div>
+          </div>
+        </div>
+        <div class="dash-table-wrap">
+          <div class="dash-section-label">Recently updated</div>
+          <table class="dash-table">
+            <thead>
+              <tr><th>Document</th><th>Folder</th><th>Last modified</th></tr>
+            </thead>
+            <tbody id="dash-recent-body"></tbody>
+          </table>
+        </div>
+      </div>
+
       <div id="v-top" class="viewer-topbar" style="display:none">
         <span id="v-title" style="font-weight:700;font-size:14px"></span>
         <div style="display:flex;align-items:center">
@@ -383,34 +486,92 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
         <div class="loading-logo"></div>
         <div style="font-size:14px;font-weight:600;color:var(--prim)">Loading document...</div>
       </div>
-      <iframe id="frame"></iframe>
+      <iframe id="frame" style="display:none"></iframe>
     </main>
   </div>
 <script>
 (function(){
+  const CURRENT_USER = ${userJson};
   let docs=[], folders=[], activeId=null, openIds=new Set(), mdMode='rendered';
   const treeEl=document.getElementById('tree'), frame=document.getElementById('frame'), sidebar=document.getElementById('sidebar'), modal=document.getElementById('modal'), driveLink=document.getElementById('drive-link');
-  const refreshOverlay=document.getElementById('refresh-overlay'), viewerOverlay=document.getElementById('viewer-overlay'), readmeCard=document.getElementById('doc-card');
+  const refreshOverlay=document.getElementById('refresh-overlay'), viewerOverlay=document.getElementById('viewer-overlay'), readmeCard=document.getElementById('doc-card'), dashboard=document.getElementById('dashboard');
 
   document.getElementById('copy-year').textContent = new Date().getFullYear();
+
+  function displayName(email) {
+    if (!email) return 'Unknown';
+    const local = email.split('@')[0];
+    return local.split('.').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+  }
 
   async function load(){
     const res = await fetch('/api/docs');
     const data = await res.json();
     if(data.error) { treeEl.innerHTML = '<div style="padding:1rem;color:red">'+data.error+'</div>'; return; }
     docs=data.docs||[]; folders=data.folders||[];
-    if (data.updated) {
-      const d = new Date(data.updated);
-      document.getElementById('last-refresh').textContent = 'Last Refresh: ' + d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
-    }
+    
     const readme = docs.find(d => d.name.toLowerCase() === 'readme');
     if (readme) {
       readmeCard.style.display = 'block';
-      document.getElementById('readme-link').onclick = () => openDoc(readme.id, 'rendered');
+      document.getElementById('readme-link').onclick = (e) => { e.preventDefault(); openDoc(readme.id, 'rendered'); };
     }
+    
     render();
+    
     const m=location.pathname.match(/^\\/view\\/([A-Za-z0-9_-]+)/);
     if(m) openDoc(m[1]);
+    else showDashboard(data);
+
+    if (CURRENT_USER) {
+      const name = displayName(CURRENT_USER.email);
+      const loginDate = new Date(CURRENT_USER.iat * 1000);
+      const loginStr = loginDate.toLocaleDateString() + ' ' + loginDate.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+      document.getElementById('user-name').textContent = name;
+      document.getElementById('user-email').textContent = CURRENT_USER.email;
+      document.getElementById('user-login').textContent = 'Last login: ' + loginStr;
+      document.getElementById('user-avatar').textContent = name.charAt(0).toUpperCase();
+      document.getElementById('user-menu').style.display = 'flex';
+    }
+  }
+
+  function showDashboard(data) {
+    document.getElementById('v-top').style.display = 'none';
+    dashboard.style.display = 'block';
+    frame.style.display = 'none';
+    activeId = null;
+    render();
+    history.pushState(null, '', '/');
+
+    if (CURRENT_USER) {
+      const name = displayName(CURRENT_USER.email);
+      const loginDate = new Date(CURRENT_USER.iat * 1000);
+      document.getElementById('dash-user-name').textContent = name;
+      document.getElementById('dash-user-email').textContent = CURRENT_USER.email;
+      document.getElementById('dash-user-login').textContent = 'Last login: ' + loginDate.toLocaleDateString() + ' ' + loginDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    if (data.updated) {
+      const d = new Date(data.updated);
+      document.getElementById('dash-refresh-time').textContent = d.toLocaleDateString();
+      document.getElementById('dash-refresh-sub').textContent = 'at ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    document.getElementById('dash-total-files').textContent = docs.length;
+    const folderCount = folders.filter(f => !f.isRoot).length;
+    document.getElementById('dash-total-sub').textContent = \`across \${folderCount} folder\${folderCount !== 1 ? 's' : ''}\`;
+
+    const recent = [...docs].sort((a, b) => new Date(b.modifiedTime) - new Date(a.modifiedTime)).slice(0, 10);
+    const tbody = document.getElementById('dash-recent-body');
+    tbody.innerHTML = recent.map(doc => {
+      const folder = folders.find(f => f.id === doc.parentFolderId);
+      const modified = new Date(doc.modifiedTime);
+      const modStr = modified.toLocaleDateString() + ' ' + modified.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return \`<tr>
+        <td><button class="doc-link" onclick="openDoc('\${doc.id}')">\${doc.name}</button></td>
+        <td style="color:var(--muted)">\${folder ? folder.name : '—'}</td>
+        <td style="color:var(--muted)">\${modStr}</td>
+      </tr>\`;
+    }).join('');
   }
 
   function render(){
@@ -430,9 +591,10 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
   function renderNode(n){
     if(!n) return '';
     const open=openIds.has(n.id);
+    const chevron = open ? \`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>\` : \`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>\`;
     return \`<div class="folder-group">
       <div class="folder-header" onclick="toggleFolder('\${n.id}')">
-        <span style="font-size:10px;width:12px">\${open?'▼':'▶'}</span> \${n.name}
+        <span style="display:flex;align-items:center;width:14px;color:var(--muted)">\${chevron}</span> \${n.name}
       </div>
       <div class="folder-children \${open?'open':''}">
         \${n.children.map(renderNode).join('')}
@@ -447,6 +609,9 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
     activeId=id; if(mode) mdMode = mode;
     const doc=docs.find(d=>d.id===id);
     if(!doc) return;
+    
+    dashboard.style.display = 'none';
+    frame.style.display = 'block';
     document.getElementById('v-top').style.display='flex';
     document.getElementById('v-title').textContent=doc.name;
     viewerOverlay.style.display = 'flex';
@@ -476,16 +641,37 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
   document.getElementById('btn-render').onclick = () => openDoc(activeId, 'rendered');
   document.getElementById('btn-raw').onclick = () => openDoc(activeId, 'raw');
   document.getElementById('menu-toggle').onclick = () => sidebar.classList.toggle('collapsed');
-  document.getElementById('refresh-btn').onclick = () => { modal.style.display = 'flex'; };
+  document.getElementById('logo-link').onclick = (e) => { e.preventDefault(); load(); };
+  document.getElementById('refresh-btn').onclick = () => { 
+    document.getElementById('modal-title').textContent = 'Refresh Repository?';
+    document.getElementById('modal-desc').textContent = 'Be sure you have added documents to Google Drive before refreshing. This will update the library for all users.';
+    document.getElementById('modal-confirm').style.display = 'inline-flex';
+    modal.style.display = 'flex'; 
+  };
   document.getElementById('modal-cancel').onclick = () => { modal.style.display = 'none'; };
   document.getElementById('modal-confirm').onclick = async () => {
     modal.style.display = 'none';
     refreshOverlay.style.display = 'flex';
-    try { await fetch('/api/refresh', {method:'POST'}); await load(); } catch (e) { alert('Refresh failed'); }
+    try { 
+      const res = await fetch('/api/refresh', {method:'POST'}); 
+      const data = await res.json();
+      if (res.status === 429) {
+        refreshOverlay.style.display = 'none';
+        document.getElementById('modal-title').textContent = 'Cooldown Active';
+        document.getElementById('modal-desc').textContent = data.error;
+        document.getElementById('modal-confirm').style.display = 'none';
+        modal.style.display = 'flex';
+        return;
+      }
+      await load(); 
+    } catch (e) { alert('Refresh failed'); }
     refreshOverlay.style.display = 'none';
   };
   document.getElementById('search').oninput = render;
-  window.onpopstate = e => e.state?.id && openDoc(e.state.id);
+  window.onpopstate = e => {
+    if (e.state?.id) openDoc(e.state.id);
+    else load();
+  };
   window.onmessage = e => e.data?.type==='NAVIGATE' && openDoc(e.data.id);
   load();
 })();

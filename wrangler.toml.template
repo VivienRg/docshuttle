@@ -9,6 +9,7 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 COMPANY_NAME = "{{COMPANY_NAME}}"
 PORTAL_TITLE = "{{PORTAL_TITLE}}"
+PORTAL_VERSION = "{{PORTAL_VERSION}}"
 
 [assets]
 directory = "./public"
