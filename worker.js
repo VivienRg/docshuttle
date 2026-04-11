@@ -509,18 +509,7 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
         <input id="search-mobile" placeholder="Search documents..." style="width:100%;height:40px;padding:0 1rem;border-radius:8px;border:1px solid var(--border);font-size:16px">
       </div>
     </div>
-    <button class="btn-toggle" id="menu-toggle" style="margin-right:8px">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-    </button>
-    <button class="btn btn-prim" id="refresh-btn" style="margin-left: 1rem; gap: 8px">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-      Refresh
-    </button>
-    <button class="btn" id="clear-cache-btn" style="margin-left: 0.5rem; gap: 8px">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-      Clear Cache
-    </button>
-  </header>
+</header>
 
   <div class="body">
     <aside class="sidebar" id="sidebar">
@@ -820,20 +809,6 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
       sessionStorage.clear();
       window.location.reload();
     }
-  };
-  document.getElementById('refresh-btn').onclick = () => {
-    pendingAction = 'refresh';
-    document.getElementById('modal-title').textContent = 'Refresh Repository?';
-    document.getElementById('modal-desc').textContent = 'Be sure you have added documents to Google Drive before refreshing. This will update the library for all users.';
-    document.getElementById('modal-confirm').style.display = 'inline-flex';
-    modal.style.display = 'flex';
-  };
-  document.getElementById('clear-cache-btn').onclick = () => {
-    pendingAction = 'clear-cache';
-    document.getElementById('modal-title').textContent = 'Clear Cache?';
-    document.getElementById('modal-desc').textContent = 'This will purge the Cloudflare edge cache, the server KV cache, and your browser cache — then reload the current document from the latest version in Google Drive.';
-    document.getElementById('modal-confirm').style.display = 'inline-flex';
-    modal.style.display = 'flex';
   };
   document.getElementById('modal-cancel').onclick = () => { modal.style.display = 'none'; pendingAction = null; };
   document.getElementById('modal-confirm').onclick = async () => {
