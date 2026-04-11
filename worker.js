@@ -214,6 +214,32 @@ export default {
       } catch (e) { return json({ error: e.message }, 500); }
     }
 
+    // API: Clear Cache (Refresh KV + Purge Cloudflare Edge Cache)
+    if (path === '/api/clear-cache' && request.method === 'POST') {
+      try {
+        if (env.CACHE) {
+          const lastRefresh = await env.CACHE.get('last_refresh_ts');
+          if (lastRefresh && Date.now() - Number(lastRefresh) < REFRESH_COOLDOWN_MS) {
+            const remaining = Math.ceil((REFRESH_COOLDOWN_MS - (Date.now() - Number(lastRefresh))) / 1000);
+            return json({ error: `Cooldown active. Try again in ${remaining}s.` }, 429);
+          }
+          await env.CACHE.put('last_refresh_ts', String(Date.now()));
+        }
+
+        const data = await buildDocList(env);
+        if (env.CACHE) await env.CACHE.put(CACHE_KEY_METADATA, JSON.stringify(data));
+
+        // Purge Cloudflare edge cache for all doc URLs
+        const cfCache = caches.default;
+        const origin = new URL(request.url).origin;
+        await Promise.allSettled(data.docs.map(doc =>
+          cfCache.delete(new Request(`${origin}/api/doc/${doc.id}`))
+        ));
+
+        return json({ success: true, updated: data.updated, purged: data.docs.length });
+      } catch (e) { return json({ error: e.message }, 500); }
+    }
+
     // API: Fetch Doc Content (Optimized with Versioned Cache)
     const docMatch = path.match(/^\/api\/doc\/([A-Za-z0-9_-]+)$/);
     if (docMatch) {
@@ -433,8 +459,8 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
 <body>
   <div class="refresh-overlay" id="refresh-overlay">
     <div class="loading-logo"></div>
-    <h2 style="color:var(--prim)">Refreshing, please wait...</h2>
-    <p style="font-size:13px;color:var(--muted);margin-top:8px">Updating the global repository cache.</p>
+    <h2 id="overlay-title" style="color:var(--prim)">Refreshing, please wait...</h2>
+    <p id="overlay-desc" style="font-size:13px;color:var(--muted);margin-top:8px">Updating the global repository cache.</p>
   </div>
 
   <div class="modal-overlay" id="modal">
@@ -458,6 +484,10 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
     <button class="btn btn-prim" id="refresh-btn" style="margin-left: 1rem; gap: 8px">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
       Refresh
+    </button>
+    <button class="btn" id="clear-cache-btn" style="margin-left: 0.5rem; gap: 8px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+      Clear Cache
     </button>
   </header>
 
@@ -550,7 +580,7 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
 <script>
 (function(){
   const CURRENT_USER = ${userJson};
-  let docs=[], folders=[], activeId=null, openIds=new Set(), mdMode='rendered', lastUpdated=null;
+  let docs=[], folders=[], activeId=null, openIds=new Set(), mdMode='rendered', lastUpdated=null, cacheVersion=null, pendingAction=null;
   const treeEl=document.getElementById('tree-content'), frame=document.getElementById('frame'), sidebar=document.getElementById('sidebar'), modal=document.getElementById('modal'), driveLink=document.getElementById('drive-link');
   const refreshOverlay=document.getElementById('refresh-overlay'), viewerOverlay=document.getElementById('viewer-overlay'), dashboard=document.getElementById('dashboard');
 
@@ -703,7 +733,9 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
     } else {
       if(doc.mimeType==='application/pdf') frame.removeAttribute('sandbox');
       else frame.setAttribute('sandbox','allow-same-origin allow-scripts allow-popups allow-forms');
-      frame.src='/api/doc/'+id + (isMd ? '?mode='+mdMode : '');
+      const bust = cacheVersion ? \`v=\${cacheVersion}\` : '';
+      const sep = bust ? '?' : '';
+      frame.src='/api/doc/'+id + sep + bust + (isMd ? (bust ? '&' : '?')+'mode='+mdMode : '');
     }
     render();
   };
@@ -713,30 +745,71 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
   document.getElementById('menu-toggle').onclick = () => sidebar.classList.toggle('collapsed');
   document.getElementById('logo-link').onclick = (e) => { e.preventDefault(); showDashboard(); };
   document.getElementById('dashboard-link').onclick = () => showDashboard();
-  document.getElementById('refresh-btn').onclick = () => { 
+  document.getElementById('refresh-btn').onclick = () => {
+    pendingAction = 'refresh';
     document.getElementById('modal-title').textContent = 'Refresh Repository?';
     document.getElementById('modal-desc').textContent = 'Be sure you have added documents to Google Drive before refreshing. This will update the library for all users.';
     document.getElementById('modal-confirm').style.display = 'inline-flex';
-    modal.style.display = 'flex'; 
+    modal.style.display = 'flex';
   };
-  document.getElementById('modal-cancel').onclick = () => { modal.style.display = 'none'; };
+  document.getElementById('clear-cache-btn').onclick = () => {
+    pendingAction = 'clear-cache';
+    document.getElementById('modal-title').textContent = 'Clear Cache?';
+    document.getElementById('modal-desc').textContent = 'This will purge the Cloudflare edge cache, the server KV cache, and your browser cache — then reload the current document from the latest version in Google Drive.';
+    document.getElementById('modal-confirm').style.display = 'inline-flex';
+    modal.style.display = 'flex';
+  };
+  document.getElementById('modal-cancel').onclick = () => { modal.style.display = 'none'; pendingAction = null; };
   document.getElementById('modal-confirm').onclick = async () => {
+    const action = pendingAction;
+    pendingAction = null;
     modal.style.display = 'none';
-    refreshOverlay.style.display = 'flex';
-    try { 
-      const res = await fetch('/api/refresh', {method:'POST'}); 
-      const data = await res.json();
-      if (res.status === 429) {
-        refreshOverlay.style.display = 'none';
-        document.getElementById('modal-title').textContent = 'Cooldown Active';
-        document.getElementById('modal-desc').textContent = data.error;
-        document.getElementById('modal-confirm').style.display = 'none';
-        modal.style.display = 'flex';
-        return;
-      }
-      await load(); 
-    } catch (e) { alert('Refresh failed'); }
-    refreshOverlay.style.display = 'none';
+
+    if (action === 'clear-cache') {
+      document.getElementById('overlay-title').textContent = 'Clearing cache, please wait...';
+      document.getElementById('overlay-desc').textContent = 'Purging Cloudflare and browser cache.';
+      refreshOverlay.style.display = 'flex';
+      try {
+        const res = await fetch('/api/clear-cache', {method:'POST'});
+        const data = await res.json();
+        if (res.status === 429) {
+          refreshOverlay.style.display = 'none';
+          document.getElementById('modal-title').textContent = 'Cooldown Active';
+          document.getElementById('modal-desc').textContent = data.error;
+          document.getElementById('modal-confirm').style.display = 'none';
+          modal.style.display = 'flex';
+          return;
+        }
+        // Clear browser Cache API
+        if ('caches' in window) {
+          const names = await caches.keys();
+          await Promise.all(names.map(n => caches.delete(n)));
+        }
+        cacheVersion = Date.now();
+        await load();
+        // If a doc is open, force-reload it bypassing browser cache
+        if (activeId) openDoc(activeId, mdMode);
+      } catch (e) { alert('Cache clear failed'); }
+      refreshOverlay.style.display = 'none';
+    } else {
+      document.getElementById('overlay-title').textContent = 'Refreshing, please wait...';
+      document.getElementById('overlay-desc').textContent = 'Updating the global repository cache.';
+      refreshOverlay.style.display = 'flex';
+      try {
+        const res = await fetch('/api/refresh', {method:'POST'});
+        const data = await res.json();
+        if (res.status === 429) {
+          refreshOverlay.style.display = 'none';
+          document.getElementById('modal-title').textContent = 'Cooldown Active';
+          document.getElementById('modal-desc').textContent = data.error;
+          document.getElementById('modal-confirm').style.display = 'none';
+          modal.style.display = 'flex';
+          return;
+        }
+        await load();
+      } catch (e) { alert('Refresh failed'); }
+      refreshOverlay.style.display = 'none';
+    }
   };
   document.getElementById('search').oninput = render;
   window.onpopstate = e => {
