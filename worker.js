@@ -409,8 +409,25 @@ body{font-family:'Satoshi',sans-serif;background:var(--bg);color:var(--text);hei
 
 .sidebar-settings{margin-top:auto;padding:0.5rem 0;border-top:1px solid var(--sidebar-border)}
   .sidebar-settings .doc-item{padding:0.55rem 1.5rem}
+  .settings-content.open{display:block !important}
   .sidebar-footer{padding:1rem 1.5rem;border-top:1px solid var(--sidebar-border);font-size:10px;color:var(--sidebar-label);line-height:1.4}
 .badge-version{display:inline-block;background:var(--prim);color:#fff;font-size:0.62rem;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:0.03em}
+
+@media (max-width: 970px) {
+  .search-wrap { display: none; }
+  .search-btn { display: flex !important; }
+}
+@media (max-width: 620px) {
+  .body { flex-direction: column; }
+  .sidebar { position: fixed; left: 0; top: 56px; bottom: 0; width: 280px; transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .viewer { width: 100%; }
+  .topbar { padding: 0 1rem; }
+  .logo-text { display: none; }
+}
+@media (max-width: 480px) {
+  .viewer-topbar { flex-wrap: wrap; height: auto; padding: 0.5rem; gap: 0.5rem; }
+}
 
 .viewer{flex:1;display:flex;flex-direction:column;position:relative;background:var(--bg)}
 .viewer-topbar{height:48px;padding:0 1rem;display:flex;align-items:center;justify-content:space-between;background:var(--surf);border-bottom:1px solid var(--border)}
@@ -483,6 +500,18 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
       <span class="logo-text">${portalTitle}</span>
     </a>
     <div class="search-wrap"><input id="search" placeholder="Search documents..."></div>
+    <button class="btn-toggle search-btn" id="search-btn" style="display:none" onclick="document.getElementById('search-modal').style.display='flex'">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    </button>
+    <div id="search-modal" style="display:none;position:fixed;inset:0;background:#fff;z-index:100;flex-direction:column;align-items:center;padding:2rem">
+      <div style="width:100%;max-width:400px">
+        <button onclick="document.getElementById('search-modal').style.display='none'" style="margin-bottom:1rem;padding:4px 8px;border:1px solid var(--border);background:#fff;border-radius:4px;cursor:pointer">Close</button>
+        <input id="search-mobile" placeholder="Search documents..." style="width:100%;height:40px;padding:0 1rem;border-radius:8px;border:1px solid var(--border);font-size:16px">
+      </div>
+    </div>
+    <button class="btn-toggle" id="menu-toggle" style="margin-right:8px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
     <button class="btn btn-prim" id="refresh-btn" style="margin-left: 1rem; gap: 8px">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
       Refresh
@@ -509,6 +538,22 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
           <div id="tree-content"></div>
         </nav>
 
+        <div class="sidebar-settings" id="sidebar-settings">
+          <div class="nav-group-label" style="cursor:pointer" onclick="document.getElementById('settings-content').classList.toggle('open')">
+            SETTINGS <span style="float:right">▼</span>
+          </div>
+          <div class="settings-content" id="settings-content" style="display:none">
+            <button class="doc-item" id="btn-refresh">
+              <svg class="nav-item-icon" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+              Refresh
+            </button>
+            <button class="doc-item" id="btn-clear-cache">
+              <svg class="nav-item-icon" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              Clear Cache
+            </button>
+          </div>
+        </div>
+
         <div class="user-menu" id="user-menu" style="display:none">
           <div class="user-avatar" id="user-avatar"></div>
           <div class="user-info">
@@ -516,18 +561,6 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
             <span class="user-email" id="user-email"></span>
             <span class="user-login" id="user-login"></span>
           </div>
-        </div>
-
-        <div class="sidebar-settings">
-          <div class="nav-group-label">SETTINGS</div>
-          <button class="doc-item" id="btn-refresh">
-            <svg class="nav-item-icon" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
-            Refresh
-          </button>
-          <button class="doc-item" id="btn-clear-cache">
-            <svg class="nav-item-icon" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-            Clear Cache
-          </button>
         </div>
 
         <div class="sidebar-footer">
@@ -760,7 +793,13 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
 
   document.getElementById('btn-render').onclick = () => openDoc(activeId, 'rendered');
   document.getElementById('btn-raw').onclick = () => openDoc(activeId, 'raw');
-  document.getElementById('menu-toggle').onclick = () => sidebar.classList.toggle('collapsed');
+  document.getElementById('menu-toggle').onclick = () => {
+    if (window.innerWidth <= 620) {
+      sidebar.classList.toggle('open');
+    } else {
+      sidebar.classList.toggle('collapsed');
+    }
+  };
   document.getElementById('logo-link').onclick = (e) => { e.preventDefault(); showDashboard(); };
   document.getElementById('dashboard-link').onclick = () => showDashboard();
   document.getElementById('docs-link').onclick = () => {

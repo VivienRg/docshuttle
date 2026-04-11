@@ -485,13 +485,6 @@
     }
 
     /* ── Settings Section ───────────────────────────────────── */
-    .sidebar-settings {
-      margin-top: auto;
-      padding: 1rem 0;
-      border-top: 1px solid var(--sidebar-border);
-    }
-
-    .sidebar-section-label {
       padding: 0.5rem 1.5rem;
       font-size: 0.65rem;
       color: var(--sidebar-label);
@@ -1110,19 +1103,6 @@
 
     </nav>
 
-    <!-- ── Settings ─────────────────────────────────────────────── -->
-    <div class="sidebar-settings">
-      <div class="sidebar-section-label">Settings</div>
-      <button class="sidebar-item" id="btn-refresh">
-        <span class="sidebar-item-icon">&#x21BB;</span>
-        <span class="sidebar-item-text">Refresh</span>
-      </button>
-      <button class="sidebar-item" id="btn-clear-cache">
-        <span class="sidebar-item-icon">&#x1F5D1;</span>
-        <span class="sidebar-item-text">Clear Cache</span>
-      </button>
-    </div>
-
   </aside>
 
   <!-- ── Main ────────────────────────────────────────────────── -->
@@ -1661,33 +1641,6 @@
 
       if (overlay) {
         overlay.addEventListener('click', closeSidebarOverlay);
-      }
-    })();
-
-    // Settings buttons
-    (function () {
-      const refreshBtn = document.getElementById('btn-refresh');
-      const clearCacheBtn = document.getElementById('btn-clear-cache');
-
-      if (refreshBtn) {
-        refreshBtn.addEventListener('click', () => {
-          window.location.reload();
-        });
-      }
-
-      if (clearCacheBtn) {
-        clearCacheBtn.addEventListener('click', async () => {
-          if ('caches' in window) {
-            try {
-              const keys = await caches.keys();
-              await Promise.all(keys.map(key => caches.delete(key)));
-            } catch (e) {
-              // Ignore cache errors
-            }
-            localStorage.clear();
-          sessionStorage.clear();
-          window.location.reload();
-        });
       }
     })();
 
