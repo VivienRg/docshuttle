@@ -116,6 +116,8 @@
       cursor: pointer;
       align-items: center;
       justify-content: center;
+      padding-top: env(safe-area-inset-top, 0);
+      padding-left: env(safe-area-inset-left, 0);
     }
 
     .hamburger-icon {
@@ -147,6 +149,11 @@
       .hamburger-toggle {
         display: flex;
       }
+    }
+
+    /* Show hamburger when sidebar is collapsed on desktop */
+    .sidebar.collapsed ~ .hamburger-toggle {
+      display: flex;
     }
 
     /* ── Overlay ──────────────────────────────────────────────── */
@@ -1590,7 +1597,7 @@
               Control</strong> — Review annually or upon system changes. Distribute to all authorized
             contributors.</span>
           <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
-            <span class="doc-badge">v1.0</span>
+            <span class="doc-badge">v1.3.2</span>
             <span class="doc-badge" style="background:#F0FDF4;color:#166534;border-color:#BBF7D0">April 2, 2026</span>
           </div>
         </div>
@@ -1619,17 +1626,32 @@
 
       function toggleSidebar() {
         const isOpen = sidebar.classList.contains('open');
-        if (isOpen) {
-          sidebar.classList.remove('open');
-          hamburgerToggle.setAttribute('aria-expanded', 'false');
+        const isCollapsed = sidebar.classList.contains('collapsed');
+        
+        if (window.innerWidth >= 1024) {
+          // Desktop: toggle collapsed state
+          if (isCollapsed) {
+            sidebar.classList.remove('collapsed');
+          } else {
+            sidebar.classList.add('collapsed');
+          }
         } else {
-          sidebar.classList.add('open');
-          hamburgerToggle.setAttribute('aria-expanded', 'true');
+          // Mobile/Tablet: toggle drawer state
+          if (isOpen) {
+            sidebar.classList.remove('open');
+            hamburgerToggle.setAttribute('aria-expanded', 'false');
+          } else {
+            sidebar.classList.add('open');
+            hamburgerToggle.setAttribute('aria-expanded', 'true');
+          }
         }
       }
 
-      function closeSidebar() {
-        sidebar.classList.remove('open');
+      function closeSidebarOverlay() {
+        // On tablet/mobile close drawer, on desktop ensure collapsed
+        if (window.innerWidth < 1024) {
+          sidebar.classList.remove('open');
+        }
         hamburgerToggle.setAttribute('aria-expanded', 'false');
       }
 
@@ -1638,7 +1660,7 @@
       }
 
       if (overlay) {
-        overlay.addEventListener('click', closeSidebar);
+        overlay.addEventListener('click', closeSidebarOverlay);
       }
     })();
 
