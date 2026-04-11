@@ -38,11 +38,32 @@
       --info: #3C50E0;
       --info-bg: #EEF2FF;
       --sidebar-w: 260px;
+      --sidebar-w-collapsed: 56px;
+      --content-max-width: 75ch;
+      --font-base-desktop: 15px;
+      --font-base-tablet: 14px;
+      --font-base-mobile: 14px;
+      --touch-target-min: 44px;
+      --sidebar-item-height: 48px;
+      --transition-speed: 250ms;
+      --overlay-bg: rgba(0, 0, 0, 0.5);
     }
 
     html {
       scroll-behavior: smooth;
-      font-size: 15px;
+      font-size: var(--font-base-desktop);
+    }
+
+    @media (max-width: 1023px) {
+      html {
+        font-size: var(--font-base-tablet);
+      }
+    }
+
+    @media (max-width: 767px) {
+      html {
+        font-size: var(--font-base-mobile);
+      }
     }
 
     body {
@@ -79,6 +100,77 @@
     .sidebar::-webkit-scrollbar-thumb {
       background: var(--sidebar-border);
       border-radius: 4px;
+    }
+
+    /* ── Hamburger Toggle ──────────────────────────────────────── */
+    .hamburger-toggle {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 100;
+      width: var(--touch-target-min);
+      height: var(--touch-target-min);
+      background: var(--sidebar-bg);
+      border: none;
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hamburger-icon {
+      width: 20px;
+      height: 2px;
+      background: #fff;
+      position: relative;
+    }
+
+    .hamburger-icon::before,
+    .hamburger-icon::after {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 2px;
+      background: #fff;
+      left: 0;
+    }
+
+    .hamburger-icon::before {
+      top: -6px;
+    }
+
+    .hamburger-icon::after {
+      top: 6px;
+    }
+
+    @media (max-width: 1023px) {
+      .hamburger-toggle {
+        display: flex;
+      }
+    }
+
+    /* ── Overlay ──────────────────────────────────────────────── */
+    .overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--overlay-bg);
+      z-index: 40;
+      opacity: 0;
+      transition: opacity var(--transition-speed) ease;
+    }
+
+    @media (max-width: 1023px) {
+      .overlay {
+        display: block;
+      }
+
+      .sidebar.open ~ .overlay {
+        opacity: 1;
+      }
     }
 
     .sidebar-brand {
@@ -242,12 +334,264 @@
       line-height: 1.5;
     }
 
+    /* ── Search ──────────────────────────────────────────────── */
+    .search-container {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      background: var(--card-bg);
+      border-radius: 8px;
+      margin: 1rem;
+    }
+
+    .search-toggle {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      padding: 0.5rem;
+      cursor: pointer;
+    }
+
+    .search-input-wrapper {
+      flex: 1;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.9rem;
+      background: #fff;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-light);
+    }
+
+    @media (max-width: 767px) {
+      .search-container {
+        position: sticky;
+        top: 0;
+        background: var(--body-bg);
+        margin: 0;
+        padding: 0.75rem;
+        border-bottom: 1px solid var(--border);
+        z-index: 30;
+      }
+
+      .search-toggle {
+        display: block;
+      }
+
+      .search-input-wrapper {
+        display: none;
+        flex: 1;
+      }
+
+      .search-container.expanded .search-input-wrapper {
+        display: block;
+      }
+
+      .search-container.expanded .search-toggle {
+        display: none;
+      }
+    }
+
+    /* ── Page Navigation ───────────────────────────────────── */
+    .page-nav {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .page-nav-btn {
+      display: flex;
+      flex-direction: column;
+      padding: 1rem 1.25rem;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      text-decoration: none;
+      color: var(--text-primary);
+      min-width: 140px;
+      transition: border-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+    }
+
+    .page-nav-btn:hover {
+      border-color: var(--accent);
+      box-shadow: 0 2px 8px rgba(60, 80, 224, 0.15);
+    }
+
+    .page-nav-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .page-nav-title {
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .page-nav-next {
+      text-align: right;
+      margin-left: auto;
+    }
+
+    /* Mobile scrolling */
+    @media (max-width: 767px) {
+      .main {
+        position: relative;
+        height: 100vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      html,
+      body {
+        height: 100%;
+        overflow: hidden;
+      }
+    }
+
+    @media (max-width: 767px) {
+      .page-nav {
+        flex-direction: column;
+      }
+
+      .page-nav-btn {
+        min-width: 100%;
+      }
+
+      .page-nav-next {
+        text-align: left;
+        margin-left: 0;
+      }
+    }
+
+    /* ── Settings Section ───────────────────────────────────── */
+    .sidebar-settings {
+      margin-top: auto;
+      padding: 1rem 0;
+      border-top: 1px solid var(--sidebar-border);
+    }
+
+    .sidebar-section-label {
+      padding: 0.5rem 1.5rem;
+      font-size: 0.65rem;
+      color: var(--sidebar-label);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      width: 100%;
+      padding: 0.75rem 1.5rem;
+      background: none;
+      border: none;
+      color: var(--sidebar-text);
+      font-size: 0.85rem;
+      cursor: pointer;
+      text-align: left;
+      min-height: var(--sidebar-item-height);
+      transition: background var(--transition-speed) ease;
+    }
+
+    .sidebar-item:hover,
+    .sidebar-item:focus {
+      background: var(--sidebar-hover);
+      color: var(--sidebar-active-text);
+      outline: none;
+    }
+
+    .sidebar-item:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
+    }
+
+    .sidebar-item-icon {
+      font-size: 1rem;
+      width: 20px;
+      text-align: center;
+    }
+
     /* ── Main Content ─────────────────────────────────────────── */
     .main {
       margin-left: var(--sidebar-w);
       flex: 1;
       padding: 0;
       min-height: 100vh;
+      max-width: var(--content-max-width);
+      transition: margin-left var(--transition-speed) ease;
+    }
+
+    /* Responsive: sidebar collapsed state */
+    @media (min-width: 1024px) {
+      .sidebar.collapsed {
+        width: var(--sidebar-w-collapsed);
+      }
+
+      .sidebar.collapsed .sidebar-brand-text,
+      .sidebar.collapsed .sidebar-meta,
+      .sidebar.collapsed .sidebar-nav {
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      .sidebar.collapsed ~ .main {
+        margin-left: var(--sidebar-w-collapsed);
+      }
+    }
+
+    /* Tablet (768-1023px): collapsible sidebar with overlay */
+    @media (min-width: 768px) and (max-width: 1023px) {
+      .sidebar {
+        transform: translateX(-100%);
+        transition: transform var(--transition-speed) ease;
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .sidebar.collapsed {
+        transform: translateX(-100%);
+      }
+
+      .main {
+        margin-left: 0;
+      }
+    }
+
+    /* Mobile (<768px): slide-out drawer */
+    @media (max-width: 767px) {
+      .sidebar {
+        transform: translateX(-100%);
+        width: 280px;
+        transition: transform var(--transition-speed) ease;
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .main {
+        margin-left: 0;
+        padding: 1rem;
+        padding-top: 60px;
+      }
     }
 
     .topbar {
@@ -647,6 +991,11 @@
 
 <body>
 
+  <button class="hamburger-toggle" aria-label="Toggle sidebar" aria-expanded="false">
+    <span class="hamburger-icon"></span>
+  </button>
+  <div class="overlay"></div>
+
   <!-- ── Sidebar ─────────────────────────────────────────────── -->
   <aside class="sidebar">
 
@@ -754,10 +1103,32 @@
 
     </nav>
 
+    <!-- ── Settings ─────────────────────────────────────────────── -->
+    <div class="sidebar-settings">
+      <div class="sidebar-section-label">Settings</div>
+      <button class="sidebar-item" id="btn-refresh">
+        <span class="sidebar-item-icon">&#x21BB;</span>
+        <span class="sidebar-item-text">Refresh</span>
+      </button>
+      <button class="sidebar-item" id="btn-clear-cache">
+        <span class="sidebar-item-icon">&#x1F5D1;</span>
+        <span class="sidebar-item-text">Clear Cache</span>
+      </button>
+    </div>
+
   </aside>
 
   <!-- ── Main ────────────────────────────────────────────────── -->
   <div class="main">
+
+    <div class="search-container">
+      <button class="search-toggle" aria-label="Search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </button>
+      <div class="search-input-wrapper">
+        <input type="search" class="search-input" placeholder="Search docs..." aria-label="Search documentation">
+      </div>
+    </div>
 
     <div class="topbar">
       <div class="topbar-breadcrumb">
@@ -1225,10 +1596,210 @@
         </div>
       </section>
 
+      <nav class="page-nav" aria-label="Page navigation">
+        <a href="#" class="page-nav-btn page-nav-prev">
+          <span class="page-nav-label">Previous</span>
+          <span class="page-nav-title">Previous Doc</span>
+        </a>
+        <a href="#" class="page-nav-btn page-nav-next">
+          <span class="page-nav-label">Next</span>
+          <span class="page-nav-title">Next Doc</span>
+        </a>
+      </nav>
+
     </div>
   </div>
 
   <script>
+    // Hamburger toggle & sidebar
+    (function () {
+      const hamburgerToggle = document.querySelector('.hamburger-toggle');
+      const sidebar = document.querySelector('.sidebar');
+      const overlay = document.querySelector('.overlay');
+
+      function toggleSidebar() {
+        const isOpen = sidebar.classList.contains('open');
+        if (isOpen) {
+          sidebar.classList.remove('open');
+          hamburgerToggle.setAttribute('aria-expanded', 'false');
+        } else {
+          sidebar.classList.add('open');
+          hamburgerToggle.setAttribute('aria-expanded', 'true');
+        }
+      }
+
+      function closeSidebar() {
+        sidebar.classList.remove('open');
+        hamburgerToggle.setAttribute('aria-expanded', 'false');
+      }
+
+      if (hamburgerToggle) {
+        hamburgerToggle.addEventListener('click', toggleSidebar);
+      }
+
+      if (overlay) {
+        overlay.addEventListener('click', closeSidebar);
+      }
+    })();
+
+    // Settings buttons
+    (function () {
+      const refreshBtn = document.getElementById('btn-refresh');
+      const clearCacheBtn = document.getElementById('btn-clear-cache');
+
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+          window.location.reload();
+        });
+      }
+
+      if (clearCacheBtn) {
+        clearCacheBtn.addEventListener('click', async () => {
+          if ('caches' in window) {
+            try {
+              const keys = await caches.keys();
+              await Promise.all(keys.map(key => caches.delete(key)));
+            } catch (e) {
+              // Ignore cache errors
+            }
+            localStorage.clear();
+          sessionStorage.clear();
+          window.location.reload();
+        });
+      }
+    })();
+
+    // Search toggle
+    (function () {
+      const searchContainer = document.querySelector('.search-container');
+      const searchToggle = document.querySelector('.search-toggle');
+      const searchInput = document.querySelector('.search-input');
+
+      if (searchToggle) {
+        searchToggle.addEventListener('click', () => {
+          searchContainer.classList.add('expanded');
+          searchInput.focus();
+        });
+      }
+
+      // Cmd/Ctrl + K keyboard shortcut
+      document.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+          e.preventDefault();
+          if (searchInput) searchInput.focus();
+        }
+      });
+    })();
+
+    // Lazy loading for images with data-src
+    if ('IntersectionObserver' in window) {
+      const imageObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const img = entry.target;
+            if (img.dataset.src) {
+              img.src = img.dataset.src;
+              img.removeAttribute('data-src');
+            }
+            observer.unobserve(img);
+          }
+        });
+      });
+
+      document.querySelectorAll('img[data-src]').forEach(img => {
+        imageObserver.observe(img);
+      });
+    }
+
+    // Prefetch next/prev pages
+    (function () {
+      const prefetchPage = (url) => {
+        if (url && 'fetch' in window) {
+          fetch(url, { method: 'HEAD', mode: 'cors' })
+            .then(response => {
+              if (response.ok) {
+                const link = document.createElement('link');
+                link.rel = 'prefetch';
+                link.href = url;
+                document.head.appendChild(link);
+              }
+            })
+            .catch(() => {});
+        }
+      };
+
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => {
+          const nextBtn = document.querySelector('.page-nav-next');
+          const prevBtn = document.querySelector('.page-nav-prev');
+          if (nextBtn) prefetchPage(nextBtn.href);
+          if (prevBtn) prefetchPage(prevBtn.href);
+        });
+      } else {
+        setTimeout(() => {
+          const nextBtn = document.querySelector('.page-nav-next');
+          const prevBtn = document.querySelector('.page-nav-prev');
+          if (nextBtn) prefetchPage(nextBtn.href);
+          if (prevBtn) prefetchPage(prevBtn.href);
+        }, 2000);
+      }
+    })();
+
+    // iPad split-view detection
+    (function () {
+      const getSplitViewWidth = () => {
+        return window.outerWidth - window.innerWidth;
+      };
+
+      const handleSplitViewChange = () => {
+        const splitWidth = getSplitViewWidth();
+        const sidebar = document.querySelector('.sidebar');
+
+        if (splitWidth > 0) {
+          sidebar.classList.add('split-view');
+        } else {
+          sidebar.classList.remove('split-view');
+        }
+      };
+
+      window.addEventListener('resize', handleSplitViewChange);
+      handleSplitViewChange();
+
+      // Save/load sidebar state
+      const saveSidebarState = () => {
+        const isCollapsed = document.querySelector('.sidebar.collapsed');
+        const splitWidth = getSplitViewWidth();
+        const key = splitWidth > 0 ? 'sidebar-split_view' : 'sidebar_default';
+        localStorage.setItem(key, isCollapsed ? 'collapsed' : 'expanded');
+      };
+
+      const loadSidebarState = () => {
+        const splitWidth = getSplitViewWidth();
+        const key = splitWidth > 0 ? 'sidebar-split_view' : 'sidebar_default';
+        const state = localStorage.getItem(key);
+
+        if (state === 'collapsed') {
+          document.querySelector('.sidebar').classList.add('collapsed');
+        }
+      };
+    })();
+
+    // Keyboard navigation (prev/next)
+    document.addEventListener('keydown', (e) => {
+      const prevBtn = document.querySelector('.page-nav-prev');
+      const nextBtn = document.querySelector('.page-nav-next');
+
+      if (e.key === 'ArrowLeft' && prevBtn && document.activeElement.tagName !== 'INPUT') {
+        e.preventDefault();
+        prevBtn.click();
+      }
+
+      if (e.key === 'ArrowRight' && nextBtn && document.activeElement.tagName !== 'INPUT') {
+        e.preventDefault();
+        nextBtn.click();
+      }
+    });
+
     // Populate portal title from parent window (when embedded in the portal iframe)
     (function () {
       function applyTitle(title) {
