@@ -337,7 +337,7 @@ function json(d, status = 200) { return new Response(JSON.stringify(d), { status
 function getPortalHtml(env, user = null) {
   const companyName = env.COMPANY_NAME || 'DocShuttle';
   const portalTitle = env.PORTAL_TITLE || 'DocShuttle';
-  const portalVersion = env.PORTAL_VERSION || '1.3.1';
+  const portalVersion = env.PORTAL_VERSION || '1.3.2';
   const userJson = user ? JSON.stringify({ email: user.email, sub: user.sub, iat: user.iat }) : 'null';
 
   return `<!DOCTYPE html>
@@ -407,7 +407,9 @@ body{font-family:'Satoshi',sans-serif;background:var(--bg);color:var(--text);hei
 .folder-children.open{display:block}
 .folder-children .doc-item, .folder-children .folder-header { padding-left: 1rem; }
 
-.sidebar-footer{padding:1rem 1.5rem;border-top:1px solid var(--sidebar-border);font-size:10px;color:var(--sidebar-label);line-height:1.4}
+.sidebar-settings{margin-top:auto;padding:0.5rem 0;border-top:1px solid var(--sidebar-border)}
+  .sidebar-settings .doc-item{padding:0.55rem 1.5rem}
+  .sidebar-footer{padding:1rem 1.5rem;border-top:1px solid var(--sidebar-border);font-size:10px;color:var(--sidebar-label);line-height:1.4}
 .badge-version{display:inline-block;background:var(--prim);color:#fff;font-size:0.62rem;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:0.03em}
 
 .viewer{flex:1;display:flex;flex-direction:column;position:relative;background:var(--bg)}
@@ -500,6 +502,10 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
             <svg class="nav-item-icon" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
             Dashboard
           </button>
+          <button class="doc-item" id="docs-link">
+            <svg class="nav-item-icon" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Documentation
+          </button>
           <div id="tree-content"></div>
         </nav>
 
@@ -510,6 +516,18 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
             <span class="user-email" id="user-email"></span>
             <span class="user-login" id="user-login"></span>
           </div>
+        </div>
+
+        <div class="sidebar-settings">
+          <div class="nav-group-label">SETTINGS</div>
+          <button class="doc-item" id="btn-refresh">
+            <svg class="nav-item-icon" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+            Refresh
+          </button>
+          <button class="doc-item" id="btn-clear-cache">
+            <svg class="nav-item-icon" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Clear Cache
+          </button>
         </div>
 
         <div class="sidebar-footer">
@@ -745,6 +763,25 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
   document.getElementById('menu-toggle').onclick = () => sidebar.classList.toggle('collapsed');
   document.getElementById('logo-link').onclick = (e) => { e.preventDefault(); showDashboard(); };
   document.getElementById('dashboard-link').onclick = () => showDashboard();
+  document.getElementById('docs-link').onclick = () => {
+    window.open('/DOCUMENTATION.html', '_blank');
+  };
+
+  document.getElementById('btn-refresh').onclick = () => {
+    window.location.reload();
+  };
+
+  document.getElementById('btn-clear-cache').onclick = async () => {
+    if (confirm('Clear all cached data? This will refresh all documents.')) {
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.reload();
+    }
+  };
   document.getElementById('refresh-btn').onclick = () => {
     pendingAction = 'refresh';
     document.getElementById('modal-title').textContent = 'Refresh Repository?';
