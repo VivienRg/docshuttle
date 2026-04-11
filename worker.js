@@ -494,7 +494,6 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
   </div>
 
   <header class="topbar">
-    <button class="btn-toggle" id="menu-toggle"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
     <a href="/" class="logo-container" id="logo-link">
       <svg class="logo-svg" viewBox="0 0 1024.8 1024.8"><polygon points="427.6 128.78 968.15 128.78 750.93 506.41 633.13 506.41 810.25 219.01 488.59 219.85 427.6 128.78" style="fill:#5b616e;"/><polygon points="56.65 234.05 427.6 234.05 490.26 335.98 116.8 335.98 56.65 234.05" style="fill:#5b616e;"/><polygon points="599.5 285.01 407.5 590.97 267.19 370.23 142.7 370.23 403.37 780.45 719.39 284.98 599.5 285.01" style="fill:#f59e0b;"/><polygon points="612.24 544.84 442.64 830.58 498.61 919.97 728.37 544.84 612.24 544.84" style="fill:#5b616e;"/></svg>
       <span class="logo-text">${portalTitle}</span>
@@ -782,13 +781,6 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
 
   document.getElementById('btn-render').onclick = () => openDoc(activeId, 'rendered');
   document.getElementById('btn-raw').onclick = () => openDoc(activeId, 'raw');
-  document.getElementById('menu-toggle').onclick = () => {
-    if (window.innerWidth <= 620) {
-      sidebar.classList.toggle('open');
-    } else {
-      sidebar.classList.toggle('collapsed');
-    }
-  };
   document.getElementById('logo-link').onclick = (e) => { e.preventDefault(); showDashboard(); };
   document.getElementById('dashboard-link').onclick = () => showDashboard();
   document.getElementById('docs-link').onclick = () => {
