@@ -419,11 +419,13 @@ body{font-family:'Satoshi',sans-serif;background:var(--bg);color:var(--text);hei
 }
 @media (max-width: 620px) {
   .body { flex-direction: column; }
-  .sidebar { position: fixed; left: 0; top: 56px; bottom: 0; width: 280px; transform: translateX(-100%); }
+  .sidebar { position: fixed; left: 0; top: 56px; bottom: 0; width: 280px; transform: translateX(-100%); z-index: 100; }
   .sidebar.open { transform: translateX(0); }
-  .viewer { width: 100%; }
+  .viewer, .dashboard { width: 100%; }
   .topbar { padding: 0 1rem; }
   .logo-text { display: none; }
+  html, body { height: auto; overflow-y: auto; }
+  .dashboard { overflow-y: auto; -webkit-overflow-scrolling: touch; }
 }
 @media (max-width: 480px) {
   .viewer-topbar { flex-wrap: wrap; height: auto; padding: 0.5rem; gap: 0.5rem; }
