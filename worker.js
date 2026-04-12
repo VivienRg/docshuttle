@@ -419,13 +419,12 @@ body{font-family:'Satoshi',sans-serif;background:var(--bg);color:var(--text);hei
 }
 @media (max-width: 620px) {
   .body { flex-direction: column; }
-  .sidebar { position: fixed; left: 0; top: 56px; bottom: 0; width: 280px; transform: translateX(-100%); z-index: 100; }
-  .sidebar.open { transform: translateX(0); }
+  .sidebar { display: none; position: sticky; top: 56px; width: 100%; max-height: calc(100vh - 56px); overflow-y: auto; z-index: 10; }
+  .sidebar.open { display: block; }
   .viewer, .dashboard { width: 100%; }
-  .topbar { padding: 0 1rem; }
+  .topbar { padding: 0 1rem; position: sticky; top: 0; z-index: 20; }
   .logo-text { display: none; }
-  html, body { height: auto; overflow-y: auto; }
-  .dashboard { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .dashboard { overflow-y: auto; -webkit-overflow-scrolling: touch; height: calc(100vh - 56px); }
 }
 @media (max-width: 480px) {
   .viewer-topbar { flex-wrap: wrap; height: auto; padding: 0.5rem; gap: 0.5rem; }
@@ -788,7 +787,8 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
   document.getElementById('btn-raw').onclick = () => openDoc(activeId, 'raw');
   window.toggleSidebar = () => {
     if (window.innerWidth <= 620) {
-      sidebar.classList.toggle('open');
+      const isOpen = sidebar.style.display === 'block';
+      sidebar.style.display = isOpen ? 'none' : 'block';
     } else {
       sidebar.classList.toggle('collapsed');
     }
