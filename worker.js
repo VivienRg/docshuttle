@@ -417,20 +417,45 @@ body{font-family:'Satoshi',sans-serif;background:var(--bg);color:var(--text);hei
   .search-wrap { display: none; }
   .search-btn { display: flex !important; }
 }
-@media (max-width: 620px) {
+@media (max-width: 768px) {
   .body { flex-direction: column; }
-  .sidebar { display: none; position: sticky; top: 56px; width: 100%; max-height: calc(100vh - 56px); overflow-y: auto; z-index: 10; }
-  .sidebar.open { display: block; }
+  .sidebar { 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    bottom: 0; 
+    width: 280px; 
+    transform: translateX(-100%); 
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+    display: flex !important; 
+    z-index: 100; 
+    box-shadow: 10px 0 25px rgba(0,0,0,0.1);
+  }
+  .sidebar.open { transform: translateX(0); }
   .viewer, .dashboard { width: 100%; }
   .topbar { padding: 0 1rem; position: sticky; top: 0; z-index: 20; }
   .logo-text { display: none; }
-  .dashboard { overflow-y: auto; -webkit-overflow-scrolling: touch; height: calc(100vh - 56px); }
+  .dashboard { overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; height: auto; }
 }
 @media (max-width: 480px) {
   .viewer-topbar { flex-wrap: wrap; height: auto; padding: 0.5rem; gap: 0.5rem; }
 }
 
-.viewer{flex:1;display:flex;flex-direction:column;position:relative;background:var(--bg)}
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: none;
+  z-index: 45;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.sidebar-overlay.open {
+  display: block;
+  opacity: 1;
+}
+
+.viewer{flex:1;display:flex;flex-direction:column;position:relative;background:var(--bg);overflow:hidden}
 .viewer-topbar{height:48px;padding:0 1rem;display:flex;align-items:center;justify-content:space-between;background:var(--surf);border-bottom:1px solid var(--border)}
 
 .btn{padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:4px;text-decoration:none;color:inherit}
@@ -513,6 +538,7 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
       </div>
     </div>
 </header>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
 
   <div class="body">
     <aside class="sidebar" id="sidebar">
@@ -786,9 +812,9 @@ iframe{flex:1;border:none;background:#fff;transition:opacity 0.2s}
   document.getElementById('btn-render').onclick = () => openDoc(activeId, 'rendered');
   document.getElementById('btn-raw').onclick = () => openDoc(activeId, 'raw');
   window.toggleSidebar = () => {
-    if (window.innerWidth <= 620) {
-      const isOpen = sidebar.style.display === 'block';
-      sidebar.style.display = isOpen ? 'none' : 'block';
+    if (window.innerWidth <= 768) {
+      sidebar.classList.toggle('open');
+      document.getElementById('sidebar-overlay').classList.toggle('open');
     } else {
       sidebar.classList.toggle('collapsed');
     }
